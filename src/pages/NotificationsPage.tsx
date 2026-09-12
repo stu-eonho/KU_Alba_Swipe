@@ -1,36 +1,19 @@
 import { useEffect } from 'react';
 import { Bell, WifiOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Button, EmptyState, Skeleton, useToast } from '@/components/ui';
 import { NotificationList } from '@/features/notifications';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/lib/auth-context';
-import type { NotificationItem } from '@/types';
 
 export default function NotificationsPage() {
-  const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuth();
-  const { notifications, isLoading, isError, retry, markRead, markAllRead, markError } =
-    useNotifications();
+  const { notifications, isLoading, isError, retry, markAllRead, markError } = useNotifications();
   const unreadCount = notifications.filter((item) => !item.readAt).length;
 
   useEffect(() => {
     if (markError) toast.error('읽음 처리하지 못했어요');
   }, [markError, toast]);
-
-  const handleSelect = (notification: NotificationItem) => {
-    if (!notification.applicationId) {
-      toast.error('관련 내용을 찾을 수 없어요');
-      return;
-    }
-    navigate(
-      user?.role === 'employer'
-        ? `/employer/applicants?applicationId=${notification.applicationId}`
-        : `/settings/applications/${notification.applicationId}`,
-    );
-    if (!notification.readAt) markRead(notification.id);
-  };
 
   if (isLoading) {
     return (
@@ -72,7 +55,7 @@ export default function NotificationsPage() {
           />
         </div>
       ) : (
-        <NotificationList notifications={notifications} onSelect={handleSelect} />
+        <NotificationList notifications={notifications} role={user?.role ?? 'seeker'} />
       )}
     </div>
   );

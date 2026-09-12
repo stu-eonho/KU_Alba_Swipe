@@ -86,6 +86,20 @@ create trigger on_auth_user_created_contact
 alter table seeker_ratings add column if not exists reason_codes text[] not null default '{}';
 alter table seeker_ratings add column if not exists reason_other text;
 
+-- PostgreSQL CHECK 식에는 서브쿼리를 직접 넣을 수 없습니다. 배열 중복 검사는
+-- immutable 함수로 감싸야 마이그레이션과 이후 INSERT/UPDATE가 모두 동작합니다.
+create or replace function public.text_array_has_unique_values(values_to_check text[])
+returns boolean
+language sql
+immutable
+parallel safe
+strict
+set search_path = pg_catalog
+as $$
+  select count(*) = count(distinct item_value)
+  from unnest(values_to_check) as item(item_value)
+$$;
+
 -- 기존 행은 '{}' 로 남습니다. 수정 저장할 때부터 새 검증이 걸립니다.
 do $$
 begin
@@ -101,9 +115,7 @@ alter table seeker_ratings add constraint seeker_ratings_reasons_check
     or (
       cardinality(reason_codes) between 1 and 3
       -- 중복이 있으면 "3개"가 실제로는 1종류일 수 있습니다.
-      and cardinality(reason_codes) = (
-        select count(distinct code) from unnest(reason_codes) as code
-      )
+      and public.text_array_has_unique_values(reason_codes)
       and reason_codes <@ ARRAY[
         'reliable','relevant_experience','communication','schedule_fit',
         'friendly','quick_learner','teamwork','other'
@@ -318,7 +330,7 @@ begin
     v_body  := coalesce(v_store_name, '가게') || '에서 회원님의 지원서를 열어봤어요';
   else
     v_title := '지원 결과가 나왔어요';
-    v_body  := coalesce(v_store_name, '가게') || '의 이번 채용은 아쉽게 마무리됐어요';
+    v_body  := coalesce(v_store_name, '가게') || '의 이번 지원은 아쉽게 마무리됐어요';
   end if;
 
   insert into notifications (

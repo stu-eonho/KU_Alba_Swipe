@@ -61,6 +61,7 @@ const TEXT_REWRITES: Array<[from: RegExp, to: string]> = [
   [/채용이 확정됐어요/g, '관심을 보냈어요'],
   [/회원님을 채용했어요/g, '회원님께 관심을 보냈어요'],
   [/채용 확정/g, '관심'],
+  [/이번 채용은/g, '이번 지원은'],
 ];
 
 function normalize(text: string): string {
@@ -84,20 +85,17 @@ function destinationOf(item: NotificationItem, role: UserRole): string | null {
 
   if (role === 'employer') {
     // 구인자는 지원자 목록에서 확인합니다. 지원서 단건 화면은 구직자 것입니다.
-    return item.applicationId ? '/employer/applicants' : null;
+    return item.applicationId ? `/employer/applicants?applicationId=${item.applicationId}` : null;
   }
 
   if (item.type === 'employer_interested') {
-    return item.jobId ? `/jobs/${item.jobId}` : null;
+    return item.applicationId ? '/settings/applications' : null;
   }
 
-  return item.applicationId ? `/applications/${item.applicationId}` : null;
+  return item.applicationId ? `/settings/applications/${item.applicationId}` : null;
 }
 
-export function presentNotification(
-  item: NotificationItem,
-  role: UserRole,
-): NotificationView {
+export function presentNotification(item: NotificationItem, role: UserRole): NotificationView {
   return {
     label: LABELS[item.type] ?? '안내',
     tone: TONES[item.type] ?? 'neutral',

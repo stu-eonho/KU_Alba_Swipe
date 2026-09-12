@@ -8,6 +8,7 @@
  * 그때까지도 색은 globals.css 의 토큰만 씁니다 — hex 를 직접 쓰지 않습니다.
  */
 import { useId } from 'react';
+import { RequiredMark } from '@/components/ui';
 
 /**
  * 필수 입력 표시.
@@ -17,16 +18,7 @@ import { useId } from 'react';
  *
  * B 가 components/ui/RequiredMark 를 올리면 이 구현만 갈아끼우면 됩니다.
  */
-export function RequiredMark() {
-  return (
-    <>
-      <span aria-hidden className="ml-0.5 text-brand">
-        *
-      </span>
-      <span className="sr-only">필수</span>
-    </>
-  );
-}
+export { RequiredMark };
 
 type FieldProps = {
   label: string;
@@ -212,8 +204,8 @@ export function Checkbox({
       />
       <span className="min-w-0">
         <span className="block text-[15px] text-ink">
-          {required ? <span className="font-semibold text-brand">[필수] </span> : '[선택] '}
           {label}
+          {required ? <RequiredMark /> : <span className="text-faint"> [선택]</span>}
         </span>
         {description && <span className="mt-1 block text-[13px] text-faint">{description}</span>}
       </span>

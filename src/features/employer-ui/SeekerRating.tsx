@@ -20,59 +20,15 @@ import clsx from 'clsx';
 import { Star } from 'lucide-react';
 import { Button, Textarea, useToast } from '@/components/ui';
 import { useSeekerRating } from '@/hooks/useSeekerRating';
+import {
+  MAX_RATING_REASONS,
+  RATING_REASON_LABELS,
+  type RatingInput,
+  type RatingReasonCode,
+} from '@/types';
 
 const SCORES = [1, 2, 3, 4, 5] as const;
-const MAX_REASONS = 3;
-
-type RatingReasonCode =
-  | 'reliable'
-  | 'relevant_experience'
-  | 'communication'
-  | 'schedule_fit'
-  | 'friendly'
-  | 'quick_learner'
-  | 'teamwork'
-  | 'other';
-
-type RatingInput = {
-  score: 1 | 2 | 3 | 4 | 5;
-  reasons: RatingReasonCode[];
-  otherReason: string | null;
-};
-
-const REASONS: ReadonlyArray<{ code: RatingReasonCode; label: string }> = [
-  { code: 'reliable', label: '성실하고 책임감 있어요' },
-  { code: 'relevant_experience', label: '관련 경험이 있어요' },
-  { code: 'communication', label: '소통이 원활해요' },
-  { code: 'schedule_fit', label: '근무 시간이 잘 맞아요' },
-  { code: 'friendly', label: '친절해요' },
-  { code: 'quick_learner', label: '업무 습득이 빨라요' },
-  { code: 'teamwork', label: '협업을 잘해요' },
-  { code: 'other', label: '기타' },
-];
-const LEGACY_MARKER = 'albaswipe-rating:v1:';
-const REASON_CODES = new Set<RatingReasonCode>(REASONS.map((item) => item.code));
-
-function parseLegacyComment(value: string | null | undefined): {
-  reasons: RatingReasonCode[];
-  otherReason: string;
-} | null {
-  if (!value?.startsWith(LEGACY_MARKER)) return null;
-  try {
-    const parsed: unknown = JSON.parse(value.slice(LEGACY_MARKER.length));
-    if (!parsed || typeof parsed !== 'object') return null;
-    const record = parsed as Record<string, unknown>;
-    if (!Array.isArray(record.reasons)) return null;
-    const reasons = record.reasons.filter(
-      (reason): reason is RatingReasonCode =>
-        typeof reason === 'string' && REASON_CODES.has(reason as RatingReasonCode),
-    );
-    const otherReason = typeof record.otherReason === 'string' ? record.otherReason : '';
-    return { reasons: reasons.slice(0, MAX_REASONS), otherReason };
-  } catch {
-    return null;
-  }
-}
+const REASONS = Object.entries(RATING_REASON_LABELS) as Array<[RatingReasonCode, string]>;
 
 export type SeekerRatingProps = {
   /** 평가 대상 구직자의 user id. 없으면 훅이 쿼리를 돌리지 않는다 */
@@ -81,23 +37,11 @@ export type SeekerRatingProps = {
 };
 
 export function SeekerRating({ seekerId, className }: SeekerRatingProps) {
-  type RatingHookState = {
-    avg: number;
-    count: number;
-    myScore: number | null;
-    myComment?: string | null;
-    myReasons?: RatingReasonCode[];
-    myOtherReason?: string | null;
-    rate: unknown;
-    isRating: boolean;
-  };
-  const rating = useSeekerRating(seekerId) as unknown as RatingHookState;
-  const { avg, count, myScore, isRating } = rating;
+  const { avg, count, myScore, myReasons, myOtherReason, rate, isRating } =
+    useSeekerRating(seekerId);
   const toast = useToast();
-  const legacyDraft = parseLegacyComment(rating.myComment);
-  const sourceReasons: RatingReasonCode[] =
-    rating.myReasons ?? legacyDraft?.reasons ?? (rating.myComment?.trim() ? ['other'] : []);
-  const sourceOther = rating.myOtherReason ?? legacyDraft?.otherReason ?? rating.myComment ?? '';
+  const sourceReasons = myReasons;
+  const sourceOther = myOtherReason ?? '';
   const sourceKey = `${myScore ?? 0}|${sourceReasons.join(',')}|${sourceOther}`;
   const [draft, setDraft] = useState<{
     sourceKey: string;
@@ -116,7 +60,7 @@ export function SeekerRating({ seekerId, className }: SeekerRatingProps) {
     current.score >= 1 &&
     current.score <= 5 &&
     current.reasons.length >= 1 &&
-    current.reasons.length <= MAX_REASONS &&
+    current.reasons.length <= MAX_RATING_REASONS &&
     !otherInvalid;
 
   const update = (next: Partial<Omit<typeof current, 'sourceKey'>>) =>
@@ -130,7 +74,7 @@ export function SeekerRating({ seekerId, className }: SeekerRatingProps) {
       });
       return;
     }
-    if (current.reasons.length >= MAX_REASONS) return;
+    if (current.reasons.length >= MAX_RATING_REASONS) return;
     update({ reasons: [...current.reasons, code] });
   };
 
@@ -142,13 +86,7 @@ export function SeekerRating({ seekerId, className }: SeekerRatingProps) {
       otherReason: current.reasons.includes('other') ? current.otherReason.trim() : null,
     };
     try {
-      if (Array.isArray(rating.myReasons)) {
-        const structuredRate = rating.rate as (value: RatingInput) => Promise<unknown>;
-        await structuredRate(input);
-      } else {
-        const legacyRate = rating.rate as (score: number, comment?: string) => Promise<unknown>;
-        await legacyRate(input.score, `${LEGACY_MARKER}${JSON.stringify(input)}`);
-      }
+      await rate(input);
       toast.success('평가를 저장했어요');
     } catch {
       toast.error('평가를 저장하지 못했어요');
@@ -180,11 +118,12 @@ export function SeekerRating({ seekerId, className }: SeekerRatingProps) {
 
       <fieldset className="mt-4">
         <legend className="text-[14px] font-semibold text-ink">왜 그렇게 평가했나요?</legend>
-        <p className="mt-1 text-[12px] text-faint">최대 {MAX_REASONS}개까지 선택할 수 있어요</p>
+        <p className="mt-1 text-[12px] text-faint">1~{MAX_RATING_REASONS}개를 선택해 주세요</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          {REASONS.map(({ code, label }) => {
+          {REASONS.map(([code, label]) => {
             const selected = current.reasons.includes(code);
-            const disabled = isRating || (!selected && current.reasons.length >= MAX_REASONS);
+            const disabled =
+              isRating || (!selected && current.reasons.length >= MAX_RATING_REASONS);
             return (
               <button
                 key={code}

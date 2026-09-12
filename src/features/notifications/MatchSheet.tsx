@@ -51,19 +51,10 @@ function MatchPanel({ counterpartId, storeName, onClose }: Omit<MatchSheetProps,
   const titleId = useId();
   const descId = useId();
 
-  type ContactState = {
-    email?: string | null;
-    phone?: string | null;
-    contact?: { email: string | null; phone: string | null } | null;
-    isLoading: boolean;
-    isError?: boolean;
-    retry?: () => Promise<unknown>;
-  };
-  const contactState = useMatchedContact(counterpartId ?? undefined) as unknown as ContactState;
-  const email = contactState.contact?.email ?? contactState.email ?? null;
-  const phone = contactState.contact?.phone ?? contactState.phone ?? null;
+  const { contact, isLoading, isError, retry } = useMatchedContact(counterpartId ?? undefined);
+  const email = contact?.email ?? null;
+  const phone = contact?.phone ?? null;
   const formattedPhone = formatPhone(phone);
-  const { isLoading, isError, retry } = contactState;
   const name = storeName?.trim() || '상대방';
 
   useEffect(() => {
