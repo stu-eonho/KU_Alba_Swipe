@@ -269,7 +269,7 @@ export type Availability = {
   endMin: number;
 };
 
-/** 사장님이 지원자에게 보인 반응. right = 관심 있음, left = 보류 */
+/** 구인자가 지원자에게 보인 반응. right = 관심 있음, left = 관심 없음 */
 export type OfferDirection = 'left' | 'right';
 
 /** offers 테이블 한 행. 사장님 1명당 구직자 1명에 1행입니다. */

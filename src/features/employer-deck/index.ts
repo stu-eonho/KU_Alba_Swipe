@@ -15,5 +15,3 @@ export type { ApplicantSwipeControlsProps } from './ApplicantSwipeControls';
 export { ApplicantSwipeOverlay } from './ApplicantSwipeOverlay';
 export type { ApplicantSwipeOverlayProps } from './ApplicantSwipeOverlay';
 
-export { HeldApplicantList } from './HeldApplicantList';
-export type { HeldApplicantListProps } from './HeldApplicantList';

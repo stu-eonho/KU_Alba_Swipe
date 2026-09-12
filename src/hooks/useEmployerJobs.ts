@@ -9,8 +9,9 @@
  */
 import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createJob, fetchMyJobs, type NewJob } from '@/lib/api/jobs';
+import { createJob, fetchMyJobs, updateJob, type JobPatch, type NewJob } from '@/lib/api/jobs';
 import { useAuth } from '@/lib/auth-context';
+import type { Job } from '@/types';
 
 const MY_JOBS_KEY = ['jobs', 'mine'];
 
@@ -49,4 +50,38 @@ export function useCreateJob() {
   const create = useCallback((input: NewJob) => mutation.mutateAsync(input), [mutation]);
 
   return { createJob: create, isCreating: mutation.isPending, createError: mutation.error };
+}
+
+/**
+ * 공고 수정.
+ *
+ *   const { updateJob, isUpdating } = useUpdateJob();
+ *   await updateJob(job.id, { hourlyWage: 13000 });
+ *
+ * 서버가 돌려준 행을 내 공고 목록 캐시에 바로 끼워 넣습니다 — 저장 직후
+ * 재요청 없이 화면이 갱신됩니다. 덱은 무효화해 새 내용이 반영되게 합니다.
+ */
+export function useUpdateJob() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: ({ jobId, patch }: { jobId: string; patch: JobPatch }) => updateJob(jobId, patch),
+    onSuccess: (saved) => {
+      queryClient.setQueryData<Job[]>(MY_JOBS_KEY, (list) =>
+        (list ?? []).map((job) => (job.id === saved.id ? saved : job)),
+      );
+      // 구직자 덱에도 같은 공고가 있습니다. 옛 내용이 남지 않게 다시 읽게 합니다.
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    },
+    onError: (error) => {
+      console.error('[jobs] 공고 수정 실패:', error);
+    },
+  });
+
+  const update = useCallback(
+    (jobId: string, patch: JobPatch) => mutation.mutateAsync({ jobId, patch }),
+    [mutation],
+  );
+
+  return { updateJob: update, isUpdating: mutation.isPending, updateError: mutation.error };
 }

@@ -207,3 +207,50 @@ export async function fetchMyJobs(employerId: string): Promise<Job[]> {
 
   return ((data ?? []) as JobRow[]).map(toJob);
 }
+
+/** 공고 수정에 넘길 값. 넘긴 필드만 바뀝니다. */
+export type JobPatch = Partial<NewJob>;
+
+/**
+ * 공고 수정 (사업자 본인 공고만).
+ *
+ * RLS 의 "employer updates own jobs" 가 남의 공고 수정을 막습니다.
+ * employer_id 는 보내지 않습니다 — 보내면 with check 와 충돌할 여지가 생깁니다.
+ *
+ * 근무 요일·시간을 건드리면 형식을 다시 검증합니다. 수정으로 형식이 깨지면
+ * 그 공고만 시간 겹침 필터에서 조용히 빠지는데, 에러가 없어 아무도 모릅니다.
+ */
+export async function updateJob(jobId: string, patch: JobPatch): Promise<Job> {
+  if (patch.workDays !== undefined || patch.workHours !== undefined) {
+    if (patch.workDays === undefined || patch.workHours === undefined) {
+      throw new Error('근무 요일과 시간은 함께 수정해야 합니다.');
+    }
+    assertWorkFormat(patch.workDays, patch.workHours);
+  }
+
+  const row: Record<string, unknown> = {};
+  if (patch.storeName !== undefined) row.store_name = patch.storeName.trim();
+  if (patch.category !== undefined) row.category = patch.category;
+  if (patch.hourlyWage !== undefined) row.hourly_wage = patch.hourlyWage;
+  if (patch.summary !== undefined) row.summary = patch.summary.trim();
+  if (patch.description !== undefined) row.description = patch.description.trim();
+  if (patch.workDays !== undefined) row.work_days = patch.workDays;
+  if (patch.workHours !== undefined) row.work_hours = patch.workHours;
+  if (patch.benefits !== undefined) row.benefits = patch.benefits;
+  if (patch.wantedTraits !== undefined) row.wanted_traits = patch.wantedTraits;
+  if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl;
+  if (patch.address !== undefined) {
+    row.address = patch.address.trim();
+    // 주소를 바꾸면 지역도 따라가야 합니다. 안 그러면 옛 지역 필터에 남습니다.
+    row.region = patch.address.trim().split(' ')[0] ?? '';
+  }
+
+  if (Object.keys(row).length === 0) {
+    throw new Error('바꿀 내용이 없습니다.');
+  }
+
+  const { data, error } = await supabase.from('jobs').update(row).eq('id', jobId).select().single();
+  if (error) throw error;
+
+  return toJob(data as JobRow);
+}
