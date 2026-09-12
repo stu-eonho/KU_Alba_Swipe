@@ -57,6 +57,22 @@ export const DEPTH_SCALE = [1, 0.95, 0.9];
 /** 깊이별 translateY(px) — [0] 0 / [1] 12 / [2] 24 */
 export const DEPTH_Y = [0, 12, 24];
 
+/* ---- 탭(상세 보기) 판정 ----
+ * 스와이프 임계값(100px)과 겹치지 않게 아주 작은 창만 탭으로 본다.
+ * 거리는 use-gesture의 `tapsThreshold`로 넘겨 엔진이 직접 판정하게 하고
+ * (state.tap), 시간은 state.elapsedTime으로 우리가 한 번 더 조인다. */
+
+/** 누적 이동 거리가 이 값 이하여야 탭 (use-gesture `tapsThreshold`로 전달) */
+export const TAP_MAX_DISTANCE_PX = 8;
+/** 누른 시간이 이 값 미만이어야 탭. 길게 누르고 떼는 것은 탭이 아니다 */
+/**
+ * 500ms 인 이유: 300ms 는 느긋한 탭을 놓친다. 놓치면 거리 8px 도 못 넘어
+ * 스와이프도 아니게 되어 **아무 일도 일어나지 않는다** — 데모에서 "탭이 안 먹네"가
+ * 되는 최악의 경우다. 거리 조건(8px)이 이미 스와이프와 배타적으로 갈라주므로
+ * 시간을 늘려도 스와이프를 잡아먹지 않는다.
+ */
+export const TAP_MAX_MS = 500;
+
 /* ------------------------------------------------------------------ */
 
 /** 지원 기기에서만 짧게 진동한다. */
@@ -79,6 +95,11 @@ export type UseSwipeGestureOptions = {
   enabled: boolean;
   /** 드래그로 스와이프가 확정됐을 때. 버튼·키보드와 동일한 경로로 합류한다 */
   onCommit: (direction: SwipeDirection) => void;
+  /**
+   * 탭으로 판정됐을 때(= 상세 보기 열기).
+   * CRITICAL: 탭과 스와이프는 **배타적**이다. 탭이면 onCommit을 부르지 않는다.
+   */
+  onTap?: () => void;
 };
 
 export type SwipeGesture = {
@@ -92,7 +113,11 @@ export type SwipeGesture = {
   flyOut: (direction: SwipeDirection) => void;
 };
 
-export function useSwipeGesture({ enabled, onCommit }: UseSwipeGestureOptions): SwipeGesture {
+export function useSwipeGesture({
+  enabled,
+  onCommit,
+  onTap,
+}: UseSwipeGestureOptions): SwipeGesture {
   const x = useMotionValue(0);
   const opacity = useMotionValue(1);
   const prefersReduced = useReducedMotion();
@@ -101,6 +126,8 @@ export function useSwipeGesture({ enabled, onCommit }: UseSwipeGestureOptions): 
   const committedRef = useRef(false);
   const onCommitRef = useRef(onCommit);
   onCommitRef.current = onCommit;
+  const onTapRef = useRef(onTap);
+  onTapRef.current = onTap;
 
   // 드래그 추종: 애니메이션 없이 즉시. transition을 걸면 반응이 둔해 보인다.
   const rotate = useTransform(x, (v) => clamp(v / ROTATE_DIVISOR, -ROTATE_MAX_DEG, ROTATE_MAX_DEG));
@@ -109,7 +136,7 @@ export function useSwipeGesture({ enabled, onCommit }: UseSwipeGestureOptions): 
   const nopeOpacity = useTransform(x, (v) => clamp(-v / SWIPE_THRESHOLD_PX, 0, 1));
 
   const bind = useDrag(
-    ({ down, movement: [mx], velocity: [vx], direction: [dx], last }) => {
+    ({ down, movement: [mx], velocity: [vx], direction: [dx], last, tap, elapsedTime }) => {
       if (committedRef.current) return;
 
       if (down) {
@@ -117,6 +144,18 @@ export function useSwipeGesture({ enabled, onCommit }: UseSwipeGestureOptions): 
         return;
       }
       if (!last) return;
+
+      /*
+       * 탭 판정이 스와이프 판정보다 **먼저**다. 둘은 배타적이어야 한다.
+       * `tap`은 use-gesture 엔진이 누적 이동거리 ≤ tapsThreshold(=8px)로 계산해 준다.
+       * 직접 계산하지 않는 이유: 엔진은 축별 누적 절대거리를 쓰므로 손가락이
+       * 왔다 갔다 흔들린 경우까지 잡아낸다. 시간(300ms)만 여기서 더 조인다.
+       */
+      if (tap && elapsedTime < TAP_MAX_MS) {
+        x.set(0); // 8px 이내라 사실상 0이지만, 다음 제스처를 위해 확실히 되돌린다
+        onTapRef.current?.();
+        return;
+      }
 
       // 거리 또는 속도 — 둘 중 하나만 넘어도 날린다 (빠르게 튕기는 제스처를 살린다)
       const decided = Math.abs(mx) > SWIPE_THRESHOLD_PX || Math.abs(vx) > SWIPE_VELOCITY;
@@ -129,7 +168,9 @@ export function useSwipeGesture({ enabled, onCommit }: UseSwipeGestureOptions): 
       }
       animate(x, 0, RETURN_SPRING);
     },
-    { axis: 'x', filterTaps: true, enabled },
+    // filterTaps + tapsThreshold: 8px 안쪽 움직임은 드래그로 치지 않고 state.tap을 세운다.
+    // 덕분에 "탭했는데 카드가 살짝 스와이프되는" 현상이 구조적으로 불가능하다.
+    { axis: 'x', filterTaps: true, tapsThreshold: TAP_MAX_DISTANCE_PX, enabled },
   );
 
   const flyOut = useCallback(

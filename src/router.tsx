@@ -18,6 +18,7 @@ import { createBrowserRouter, Navigate, Outlet, useMatches, useNavigate } from '
 import { ChevronLeft } from 'lucide-react';
 import { AppShell, RequireAuth } from '@/components/layout';
 import { useWishlist } from '@/hooks/useWishlist';
+import { Tutorial } from '@/features/onboarding';
 import { IconButton } from '@/components/ui';
 import HomeDeckPage from '@/pages/HomeDeckPage';
 import WishlistPage from '@/pages/WishlistPage';
@@ -54,6 +55,8 @@ function MainLayout() {
   return (
     <AppShell title={title} wishlistCount={count}>
       <Outlet />
+      {/* 첫 가입자 튜토리얼. localStorage로 자체 판단하므로 조건 없이 둔다 (F6) */}
+      <Tutorial />
     </AppShell>
   );
 }
