@@ -254,6 +254,12 @@ export function InteractiveTutorial({
   if (!open) return null;
 
   const waiting = Boolean(step.waitFor) && unlockedStepId !== step.id;
+  /*
+   * 구인자 덱은 실제 지원자가 0명일 수 있다. 이때 스와이프만 강제하면 8초 동안
+   * 아무 조작도 못 하는 것처럼 보인다. 구인자에게는 실제 스와이프 입력을 열어 둔 채
+   * "다음"도 즉시 제공한다. 구직자 튜토리얼의 체험 강제 흐름은 그대로 유지한다.
+   */
+  const showNext = !waiting || role === 'employer';
   const enter = prefersReduced ? { duration: 0 } : { duration: ENTER_SEC, ease: EASE_STANDARD };
   const exit = prefersReduced ? { duration: 0 } : { duration: EXIT_SEC, ease: EASE_EXIT };
   const padding = step.padding ?? 6;
@@ -334,7 +340,9 @@ export function InteractiveTutorial({
 
             {waiting && (
               <p className="text-faint mt-3 text-[12px] leading-[1.4]">
-                직접 한 번 해보세요. 잠시 뒤 건너뛸 수 있어요
+                {role === 'employer'
+                  ? '직접 밀어보거나 다음을 눌러 계속하세요'
+                  : '직접 한 번 해보세요. 잠시 뒤 건너뛸 수 있어요'}
               </p>
             )}
 
@@ -357,7 +365,7 @@ export function InteractiveTutorial({
                 기다리는 동안에는 버튼 자리를 비워 두되 높이를 유지한다.
                 버튼이 나타나면서 카드가 커지면 스포트라이트를 덮칠 수 있다.
               */}
-              {waiting ? (
+              {!showNext ? (
                 <div className="h-11" aria-hidden />
               ) : (
                 <Button data-tutorial-primary size="md" fullWidth onClick={isLast ? close : goNext}>

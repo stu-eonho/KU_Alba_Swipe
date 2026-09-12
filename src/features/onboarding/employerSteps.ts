@@ -31,7 +31,7 @@ export const EMPLOYER_STEPS: readonly TutorialStep[] = [
     anchor: 'applicant-deck',
     title: '오른쪽으로 밀면 관심 있어요',
     body: '카드를 오른쪽으로 밀어보세요.\n지원자에게 바로 알림이 갑니다.',
-    // 실제 스와이프를 기다린다. 8초 안에 안 밀면 "다음"이 나타난다 — 막히는 단계는 없다.
+    // 실제 스와이프면 자동 진행하고, 지원자가 없어도 "다음"을 즉시 눌러 진행할 수 있다.
     waitFor: 'right',
     padding: 6,
     radius: 14,

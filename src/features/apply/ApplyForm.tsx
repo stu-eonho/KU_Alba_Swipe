@@ -9,8 +9,6 @@ import type { Job, MyApplication } from '@/types';
 
 const MAX_MESSAGE_LEN = 300;
 const MIN_MESSAGE_LEN = 20;
-/** 템플릿 저장 미리보기에 보여줄 앞부분 길이. 넘치면 말줄임표를 붙인다. */
-const TEMPLATE_PREVIEW_LEN = 100;
 
 /**
  * 공백을 뺀 실제 글자 수. "   ㅁ   " 로 20자를 채우는 꼼수를 막는다.
@@ -236,42 +234,8 @@ function ApplyMessageField({
    * 누를 수 없는 버튼 밑에 "이렇게 저장돼요" 가 떠 있으면 말이 안 된다.
    */
   const canSaveTemplate = value.trim().length > 0;
-  const preview =
-    value.length > TEMPLATE_PREVIEW_LEN ? `${value.slice(0, TEMPLATE_PREVIEW_LEN)}…` : value;
-
   return (
     <>
-      {showChips && (
-        <div
-          role="group"
-          aria-label="저장한 지원서 템플릿"
-          className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {templates.map((template) => (
-            <span
-              key={template.id}
-              className="flex h-11 shrink-0 items-center rounded-full border border-line bg-surface"
-            >
-              <button
-                type="button"
-                onClick={() => insertTemplate(template.body)}
-                className="max-w-[160px] truncate py-2 pl-3.5 pr-1 text-[13px] font-medium leading-[1.3] text-ink transition-transform duration-100 ease-out active:scale-[0.97]"
-              >
-                {template.title}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRemove(template.id)}
-                aria-label={`${template.title} 템플릿 지우기`}
-                className="flex h-11 w-9 items-center justify-center rounded-r-full text-faint transition-transform duration-100 ease-out active:scale-[0.9]"
-              >
-                <X size={15} aria-hidden />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-
       <div ref={fieldRef}>
         <Textarea
           label="구인자님께 한마디"
@@ -303,29 +267,58 @@ function ApplyMessageField({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => void handleSave()}
-        disabled={!canSaveTemplate || isSaving}
-        className="-ml-1 mt-1 inline-flex h-11 items-center gap-1.5 px-1 text-[13px] font-semibold leading-[1.4] text-muted transition-transform duration-100 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:text-faint"
-      >
-        <BookmarkPlus size={15} aria-hidden />
-        현재 내용을 템플릿으로 저장
-      </button>
-
       {/*
-        저장하면 무엇이 들어가는지 미리 보여 주는 박스다. 저장된 템플릿 목록이 아니다 —
-        목록은 위 칩 행이 담당한다. 본문이 비면 그리지 않아 빈 네모가 남지 않는다.
-        줄바꿈은 whitespace-pre-wrap 으로 살린다. 사용자가 쓴 글이므로 HTML 로 넣지 않는다.
+        사용자가 가리킨 템플릿 칩을 입력창 위가 아니라 아래 박스에 모은다.
+        저장 버튼도 같은 박스 안에 둬서 "작성 영역"과 "재사용 영역"이 분명히 나뉜다.
+        가로 스크롤은 긴 템플릿이 여러 개여도 지원 화면 폭을 밀어내지 않게 한다.
       */}
-      {canSaveTemplate && (
-        <div className="mt-1 rounded-md border border-line bg-app p-3">
-          <p className="text-[12px] leading-[1.4] text-faint">이렇게 저장돼요</p>
-          <p className="mt-1 whitespace-pre-wrap break-words text-[12px] leading-[1.5] text-muted">
-            {preview}
+      <div className="mt-4 rounded-field border border-line bg-app p-3">
+        <p className="text-[13px] font-semibold leading-[1.4] text-ink">지원서 템플릿</p>
+        {showChips ? (
+          <div
+            role="group"
+            aria-label="저장한 지원서 템플릿"
+            className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {templates.map((template) => (
+              <span
+                key={template.id}
+                className="flex h-11 shrink-0 items-center rounded-full border border-line bg-surface"
+              >
+                <button
+                  type="button"
+                  onClick={() => insertTemplate(template.body)}
+                  className="max-w-[160px] truncate py-2 pl-3.5 pr-1 text-[13px] font-medium leading-[1.3] text-ink transition-transform duration-100 ease-out active:scale-[0.97]"
+                >
+                  {template.title}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(template.id)}
+                  aria-label={`${template.title} 템플릿 지우기`}
+                  className="flex h-11 w-9 items-center justify-center rounded-r-full text-faint transition-transform duration-100 ease-out active:scale-[0.9]"
+                >
+                  <X size={15} aria-hidden />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-1 text-[12px] leading-[1.5] text-faint">
+            자주 쓰는 지원 문구를 저장해 두고 다시 사용할 수 있어요.
           </p>
-        </div>
-      )}
+        )}
+
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={!canSaveTemplate || isSaving}
+          className="-ml-1 mt-1 inline-flex h-11 items-center gap-1.5 px-1 text-[13px] font-semibold leading-[1.4] text-muted transition-transform duration-100 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:text-faint"
+        >
+          <BookmarkPlus size={15} aria-hidden />
+          현재 내용을 템플릿으로 저장
+        </button>
+      </div>
     </>
   );
 }
