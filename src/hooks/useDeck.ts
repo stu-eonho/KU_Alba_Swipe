@@ -20,18 +20,28 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchDeckJobs } from '@/lib/api/jobs';
 import { createSwipe } from '@/lib/api/swipes';
 import { isCompatible } from '@/lib/availability';
+import { sortByPreference } from '@/lib/recommend';
 import { useAuth } from '@/lib/auth-context';
 import { useAvailability } from '@/hooks/useAvailability';
+import { usePreferences } from '@/hooks/usePreferences';
 import type { Job, SwipeDirection } from '@/types';
 
-/**
- * @param includeIncompatible 시간이 겹치지 않는 공고까지 전부 보여줍니다.
- *        B 의 "전체 보기" 버튼이 이 값을 true 로 넘깁니다.
- */
-export function useDeck(includeIncompatible = false) {
+export type DeckOptions = {
+  /** 시간이 겹치지 않는 공고까지 전부 보여줍니다. B 의 "전체 보기" 버튼용 */
+  includeIncompatible?: boolean;
+  /** 시·도 이름 배열. 비어 있거나 없으면 전국입니다 */
+  regions?: string[];
+};
+
+export function useDeck(options: DeckOptions | boolean = {}) {
+  // 예전 시그니처가 boolean 하나였습니다. 호출부를 한꺼번에 고치지 않아도 되게 받아 줍니다.
+  const { includeIncompatible = false, regions } =
+    typeof options === 'boolean' ? { includeIncompatible: options, regions: undefined } : options;
+
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { availability, isLoading: isAvailabilityLoading } = useAvailability();
+  const { weights, applySwipe } = usePreferences();
 
   const query = useQuery({
     queryKey: ['jobs'],
@@ -44,11 +54,16 @@ export function useDeck(includeIncompatible = false) {
     mutationFn: ({ jobId, direction }: { jobId: string; direction: SwipeDirection }) =>
       createSwipe(jobId, direction),
 
-    onMutate: ({ jobId }) => {
+    onMutate: ({ jobId, direction }) => {
       // 응답을 기다리지 않고 덱에서 먼저 뺍니다. 체감 속도가 이 앱의 전부입니다.
+      const swiped = queryClient.getQueryData<Job[]>(['jobs'])?.find((job) => job.id === jobId);
+
       queryClient.setQueryData<Job[]>(['jobs'], (jobs) =>
         (jobs ?? []).filter((job) => job.id !== jobId),
       );
+
+      // 취향 학습. 저장은 뒤따라가고 실패해도 카드를 되돌리지 않습니다.
+      if (swiped) applySwipe(swiped, direction);
     },
 
     onSuccess: () => {
@@ -70,13 +85,23 @@ export function useDeck(includeIncompatible = false) {
 
   const allJobs = query.data ?? [];
 
-  // 서버에서 거르지 않고 여기서 거릅니다. 공고가 25건뿐이라 SQL 로 문자열을
+  // 지역이 먼저입니다. 사용자가 명시적으로 고른 조건이라, 시간이 맞아도
+  // 다른 지역이면 애초에 볼 이유가 없습니다.
+  const inRegion =
+    regions && regions.length > 0 ? allJobs.filter((job) => regions.includes(job.region)) : allJobs;
+
+  // 서버에서 거르지 않고 여기서 거릅니다. 공고가 수십 건이라 SQL 로 문자열을
   // 파싱하는 것보다 훨씬 싸고, 필터를 껐다 켜는 데 왕복이 없습니다.
-  const compatible = allJobs.filter((job) => isCompatible(job, availability));
-  const hiddenCount = allJobs.length - compatible.length;
+  const compatible = inRegion.filter((job) => isCompatible(job, availability));
+  const hiddenCount = inRegion.length - compatible.length;
+
+  // 취향 점수 내림차순. 가중치가 비어 있으면 원래 순서를 그대로 둡니다.
+  const ranked = sortByPreference(weights, includeIncompatible ? inRegion : compatible);
 
   return {
-    jobs: includeIncompatible ? allJobs : compatible,
+    jobs: ranked,
+    /** 지역 필터로 걸러지고 남은 공고 수. "이 지역에 공고가 없어요" 판단에 쓰세요 */
+    regionCount: inRegion.length,
     // 가능 시간을 읽는 중에 덱을 먼저 그리면, 숨겨질 공고가 한 번 보였다가 사라집니다.
     isLoading: query.isLoading || isAvailabilityLoading,
     isError: query.isError,
