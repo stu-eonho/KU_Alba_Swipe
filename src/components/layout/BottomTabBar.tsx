@@ -12,21 +12,30 @@
  */
 import clsx from 'clsx';
 import { NavLink } from 'react-router-dom';
-import { Home, Heart, Settings } from 'lucide-react';
+import { BriefcaseBusiness, Heart, Home, UserRound, UsersRound } from 'lucide-react';
+import type { UserRole } from '@/types';
 
 export type BottomTabBarProps = {
+  role?: UserRole;
   /** 찜 탭 배지 숫자. 0이거나 undefined면 배지를 그리지 않는다. */
   wishlistCount?: number;
   className?: string;
 };
 
-const TABS = [
+const SEEKER_TABS = [
   { to: '/', label: '홈', Icon: Home },
   { to: '/wishlist', label: '찜', Icon: Heart },
-  { to: '/settings', label: '설정', Icon: Settings },
+  { to: '/me', label: '내정보', Icon: UserRound },
 ] as const;
 
-export function BottomTabBar({ wishlistCount, className }: BottomTabBarProps) {
+const EMPLOYER_TABS = [
+  { to: '/employer/applicants', label: '지원자', Icon: UsersRound },
+  { to: '/employer/jobs', label: '내 공고', Icon: BriefcaseBusiness },
+  { to: '/me', label: '내정보', Icon: UserRound },
+] as const;
+
+export function BottomTabBar({ role = 'seeker', wishlistCount, className }: BottomTabBarProps) {
+  const tabs = role === 'employer' ? EMPLOYER_TABS : SEEKER_TABS;
   const badge =
     typeof wishlistCount === 'number' && wishlistCount > 0
       ? wishlistCount > 99
@@ -45,7 +54,7 @@ export function BottomTabBar({ wishlistCount, className }: BottomTabBarProps) {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="flex h-16 items-stretch">
-        {TABS.map(({ to, label, Icon }) => (
+        {tabs.map(({ to, label, Icon }) => (
           <li key={to} className="flex-1">
             <NavLink
               to={to}

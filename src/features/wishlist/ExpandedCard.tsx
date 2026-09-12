@@ -90,7 +90,9 @@ export function ExpandedCard({ job, onClose, reviews }: ExpandedCardProps) {
 
   // 호출부가 인라인 화살표 함수를 넘겨도 이펙트가 재실행되지 않도록 ref에 담는다
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;

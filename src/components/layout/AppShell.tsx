@@ -12,6 +12,7 @@
  */
 import { createContext, useContext, useEffect, useState } from 'react';
 import clsx from 'clsx';
+import type { UserRole } from '@/types';
 import { TopBar } from './TopBar';
 import { BottomTabBar } from './BottomTabBar';
 
@@ -37,6 +38,8 @@ export type AppShellProps = {
   topBarRight?: React.ReactNode;
   /** 찜 탭 배지 숫자 */
   wishlistCount?: number;
+  /** 하단 탭 구성을 결정하는 현재 사용자 역할 */
+  role?: UserRole;
   /** 본문 <main>에 붙일 클래스 */
   contentClassName?: string;
   className?: string;
@@ -50,6 +53,7 @@ export function AppShell({
   topBarLeft,
   topBarRight,
   wishlistCount,
+  role,
   contentClassName,
   className,
 }: AppShellProps) {
@@ -58,15 +62,11 @@ export function AppShell({
   return (
     <TopBarTitleContext.Provider value={setOverride}>
       <div className={clsx('app-shell flex flex-col', className)}>
-        {showTopBar && (
-          <TopBar title={override ?? title} left={topBarLeft} right={topBarRight} />
-        )}
-        <main
-          className={clsx('flex-1', showTabBar && 'tabbar-safe', contentClassName)}
-        >
+        {showTopBar && <TopBar title={override ?? title} left={topBarLeft} right={topBarRight} />}
+        <main className={clsx('flex-1', showTabBar && 'tabbar-safe', contentClassName)}>
           {children}
         </main>
-        {showTabBar && <BottomTabBar wishlistCount={wishlistCount} />}
+        {showTabBar && <BottomTabBar role={role} wishlistCount={wishlistCount} />}
       </div>
     </TopBarTitleContext.Provider>
   );

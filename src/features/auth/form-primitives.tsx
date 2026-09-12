@@ -130,3 +130,137 @@ export function AuthLoading() {
     </div>
   );
 }
+
+/**
+ * 진행 표시 (1/3, 2/3, 3/3).
+ * B 가 components/ui/StepProgress 를 올리면 이걸 지우고 갈아탑니다.
+ */
+export function StepProgress({ current, total }: { current: number; total: number }) {
+  return (
+    <div className="mb-6">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[13px] font-semibold text-muted">
+          {current} / {total}
+        </span>
+      </div>
+      <div className="flex gap-1.5" role="presentation">
+        {Array.from({ length: total }, (_, index) => (
+          <span
+            key={index}
+            className={`h-1 flex-1 rounded-full transition-colors ${
+              index < current ? 'bg-brand' : 'bg-line'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 동의 체크박스. B 의 components/ui/Checkbox 가 올라오면 갈아탑니다. */
+export function Checkbox({
+  checked,
+  onChange,
+  label,
+  description,
+  required,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  description?: string;
+  required?: boolean;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 py-2">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        /* size-5 는 손가락으로 누르기엔 작습니다. 라벨 전체가 누르는 영역이라 괜찮습니다. */
+        className="mt-0.5 size-5 shrink-0 accent-brand"
+      />
+      <span className="min-w-0">
+        <span className="block text-[15px] text-ink">
+          {required ? <span className="font-semibold text-brand">[필수] </span> : '[선택] '}
+          {label}
+        </span>
+        {description && <span className="mt-1 block text-[13px] text-faint">{description}</span>}
+      </span>
+    </label>
+  );
+}
+
+/** 두 개 중 하나를 고르는 큰 선택지. 역할 선택에 씁니다. */
+export function ChoiceCard({
+  selected,
+  onSelect,
+  title,
+  description,
+}: {
+  selected: boolean;
+  onSelect: () => void;
+  title: string;
+  description: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={`w-full rounded-field border p-4 text-left transition-colors ${
+        selected ? 'border-brand bg-brand-soft' : 'border-line bg-surface'
+      }`}
+    >
+      <span className={`block text-[15px] font-bold ${selected ? 'text-brand' : 'text-ink'}`}>
+        {title}
+      </span>
+      <span className="mt-1 block text-[13px] text-muted">{description}</span>
+    </button>
+  );
+}
+
+/** 글자수 카운터가 달린 여러 줄 입력. 자기소개서에 씁니다. */
+export function TextareaField({
+  label,
+  value,
+  onChange,
+  maxLength,
+  placeholder,
+  hint,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  maxLength: number;
+  placeholder?: string;
+  hint?: string;
+  disabled?: boolean;
+}) {
+  const id = useId();
+
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-[13px] font-semibold text-muted">
+        {label}
+      </label>
+      <textarea
+        id={id}
+        value={value}
+        /* maxLength 를 넘기는 입력은 잘라서 받습니다. 붙여넣기로 들어오는 경우가 있습니다. */
+        onChange={(event) => onChange(event.target.value.slice(0, maxLength))}
+        placeholder={placeholder}
+        disabled={disabled}
+        rows={6}
+        className="w-full resize-y rounded-field border border-line bg-surface px-4 py-3 text-[16px] text-ink outline-none placeholder:text-faint focus:border-brand focus:ring-[3px] focus:ring-brand/15 disabled:bg-subtle"
+      />
+      <div className="mt-1.5 flex items-start justify-between gap-4">
+        <span className="text-[12px] text-faint">{hint}</span>
+        <span className="tabular shrink-0 text-[12px] text-faint">
+          {value.length} / {maxLength}
+        </span>
+      </div>
+    </div>
+  );
+}

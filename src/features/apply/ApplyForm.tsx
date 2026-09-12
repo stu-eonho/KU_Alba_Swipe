@@ -5,10 +5,8 @@
  *  공고 요약 카드(썸네일 64x64 + 가게명/직종·시급) → "사장님께 한마디" Textarea(최대 300자, 글자수 카운터)
  *  → 하단 sticky "지원서 보내기" Button primary lg
  *
- * CRITICAL(스펙 <submit>, Q2 = 버튼만): 저장하지 않는다.
- *  토스트 "지원이 완료됐어요!" + 800ms 뒤 /wishlist 로 이동만 한다.
- *  절대 에러를 내지 않는다 — 데모에서 버튼을 눌렀는데 에러가 뜨면 그 순간 끝난다.
- *  (저장은 하지 않는다. 토스트 후 반드시 이동한다.)
+ * Phase 2에서는 A의 useApply()로 applications에 upsert한 뒤
+ * 토스트 "지원이 완료됐어요!" + 800ms 뒤 /wishlist 로 이동한다.
  *
  * 헤더를 만들지 않는다 — 라우터의 FullscreenLayout이 뒤로가기 + "지원하기" 탑바를 이미 렌더한다.
  */
@@ -17,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Textarea } from '@/components/ui';
 import { JobThumb, formatWage } from '@/features/wishlist';
 import { useToast } from '@/components/ui';
+import { useApply } from '@/hooks/useApply';
 import type { Job } from '@/types';
 
 /** 스펙 <apply_view><form>: 최대 300자 */
@@ -31,21 +30,25 @@ export type ApplyFormProps = {
 export function ApplyForm({ job }: ApplyFormProps) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { apply, isApplying } = useApply();
   const [message, setMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const timer = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
+    if (isApplying || submitted) return;
 
-    // Q2 = "버튼만". 저장 훅이 없으므로 저장하지 않는다.
-    // TODO(통합): Q2가 "실제 저장"으로 바뀌면 A의 훅으로 upsert 후 같은 토스트·이동을 유지한다.
-    toast.success('지원이 완료됐어요!');
-    timer.current = window.setTimeout(() => navigate('/wishlist'), REDIRECT_DELAY_MS);
+    try {
+      await apply(job.id, message);
+      setSubmitted(true);
+      toast.success('지원이 완료됐어요!');
+      timer.current = window.setTimeout(() => navigate('/wishlist'), REDIRECT_DELAY_MS);
+    } catch {
+      toast.error('지원서를 보내지 못했어요. 다시 시도해 주세요');
+    }
   };
 
   return (
@@ -58,7 +61,9 @@ export function ApplyForm({ job }: ApplyFormProps) {
           <JobThumb job={job} iconSize={20} />
         </div>
         <div className="min-w-0">
-          <p className="clamp-1 text-ink text-[15px] leading-[1.35] font-semibold">{job.storeName}</p>
+          <p className="clamp-1 text-ink text-[15px] leading-[1.35] font-semibold">
+            {job.storeName}
+          </p>
           <p className="text-muted mt-0.5 text-[13px] leading-[1.4]">
             {job.category} · 시급 <span className="tabular">{formatWage(job.hourlyWage)}</span>
           </p>
@@ -88,7 +93,13 @@ export function ApplyForm({ job }: ApplyFormProps) {
         className="border-line bg-surface sticky bottom-0 mt-6 border-t px-4 pt-3"
         style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
       >
-        <Button type="submit" variant="primary" size="lg" fullWidth loading={submitting}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={isApplying || submitted}
+        >
           지원서 보내기
         </Button>
       </div>
