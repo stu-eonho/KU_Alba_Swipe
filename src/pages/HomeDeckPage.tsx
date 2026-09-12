@@ -28,7 +28,7 @@ import {
   emitTutorialSwipe,
   type TutorialActiveDetail,
 } from '@/features/onboarding';
-import { useDeck } from '@/hooks/useDeck';
+import { useDeck, useJobCatalog } from '@/hooks/useDeck';
 import { useMyApplications } from '@/hooks/useApply';
 import type { Job, SwipeDirection } from '@/types';
 
@@ -64,10 +64,11 @@ export default function HomeDeckPage() {
    * 필터를 걸기 전의 전체 공고. 지역 시트가 "실제로 공고가 있는 구"만 보여주고,
    * 빈 상태를 "이 조건에 공고가 아예 없다"로 판단하는 데 쓴다.
    *
-   * useDeck 을 한 번 더 부르지만 ['jobs'] 캐시를 공유하므로 네트워크 요청이 늘지 않는다.
-   * 지역·시간 필터를 전부 끈 상태라 목록이 곧 카탈로그다.
+   * useDeck 을 두 번 부르지 않는다 — 같은 ['jobs'] 캐시라 요청은 하나였지만,
+   * useDeck 에는 스와이프 뮤테이션과 취향 학습이 딸려 있어 부수효과가 두 벌 생긴다.
+   * useJobCatalog 은 같은 캐시를 읽기만 한다.
    */
-  const { jobs: catalogJobs } = useDeck({ includeIncompatible: true });
+  const { jobs: catalogJobs } = useJobCatalog();
 
   const { applications } = useMyApplications();
   const toast = useToast();

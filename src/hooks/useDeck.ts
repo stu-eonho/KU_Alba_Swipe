@@ -33,6 +33,40 @@ export type DeckOptions = {
   regions?: string[];
 };
 
+/** 덱과 카탈로그가 같은 캐시를 보도록 옵션을 한 곳에 둡니다. */
+const JOBS_QUERY = {
+  queryKey: ['jobs'] as const,
+  queryFn: fetchDeckJobs,
+  staleTime: 0,
+};
+
+/**
+ * 필터도 정렬도 걸지 않은 전체 공고.
+ *
+ * 지역 시트가 "실제로 공고가 있는 구"를 뽑거나, 빈 상태를 "이 조건에 공고가
+ * 아예 없다"로 판단할 때 씁니다.
+ *
+ * CRITICAL: 이 용도로 useDeck 을 한 번 더 부르지 마세요.
+ * 같은 ['jobs'] 캐시라 네트워크 요청은 안 늘지만, useDeck 에는 스와이프 뮤테이션과
+ * 취향 학습(usePreferences)이 딸려 있습니다. 지금은 swipe() 를 부르는 인스턴스가
+ * 하나뿐이라 부수효과가 한 번만 돌지만, 훅에 효과를 하나만 더 넣으면
+ * 두 번 도는 구조입니다. 카탈로그는 읽기만 하면 되므로 여기서 끊습니다.
+ *
+ * 취향 정렬도 걸지 않습니다 — 카탈로그 순서는 가중치에 따라 바뀔 이유가 없고,
+ * 렌더마다 60건을 다시 정렬하는 건 낭비입니다.
+ */
+export function useJobCatalog() {
+  const { user } = useAuth();
+
+  const query = useQuery({ ...JOBS_QUERY, enabled: Boolean(user) });
+
+  return {
+    jobs: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+  };
+}
+
 export function useDeck(options: DeckOptions | boolean = {}) {
   // 예전 시그니처가 boolean 하나였습니다. 호출부를 한꺼번에 고치지 않아도 되게 받아 줍니다.
   const { includeIncompatible = false, regions } =
@@ -43,12 +77,7 @@ export function useDeck(options: DeckOptions | boolean = {}) {
   const { availability, isLoading: isAvailabilityLoading } = useAvailability();
   const { weights, applySwipe } = usePreferences();
 
-  const query = useQuery({
-    queryKey: ['jobs'],
-    queryFn: fetchDeckJobs,
-    enabled: Boolean(user),
-    staleTime: 0,
-  });
+  const query = useQuery({ ...JOBS_QUERY, enabled: Boolean(user) });
 
   const mutation = useMutation({
     mutationFn: ({ jobId, direction }: { jobId: string; direction: SwipeDirection }) =>
