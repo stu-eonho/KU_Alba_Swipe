@@ -10,7 +10,7 @@
  * CRITICAL: x를 useState로 관리하지 않는다. 매 프레임 리렌더가 일어나 끊긴다.
  *           useMotionValue + useTransform으로 리렌더 없이 구동한다.
  */
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   animate,
   useMotionValue,
@@ -125,9 +125,11 @@ export function useSwipeGesture({
   /** 한 번 확정된 카드는 더 이상 드래그를 받지 않는다 */
   const committedRef = useRef(false);
   const onCommitRef = useRef(onCommit);
-  onCommitRef.current = onCommit;
   const onTapRef = useRef(onTap);
-  onTapRef.current = onTap;
+  useEffect(() => {
+    onCommitRef.current = onCommit;
+    onTapRef.current = onTap;
+  }, [onCommit, onTap]);
 
   // 드래그 추종: 애니메이션 없이 즉시. transition을 걸면 반응이 둔해 보인다.
   const rotate = useTransform(x, (v) => clamp(v / ROTATE_DIVISOR, -ROTATE_MAX_DEG, ROTATE_MAX_DEG));
@@ -149,7 +151,7 @@ export function useSwipeGesture({
        * 탭 판정이 스와이프 판정보다 **먼저**다. 둘은 배타적이어야 한다.
        * `tap`은 use-gesture 엔진이 누적 이동거리 ≤ tapsThreshold(=8px)로 계산해 준다.
        * 직접 계산하지 않는 이유: 엔진은 축별 누적 절대거리를 쓰므로 손가락이
-       * 왔다 갔다 흔들린 경우까지 잡아낸다. 시간(300ms)만 여기서 더 조인다.
+       * 왔다 갔다 흔들린 경우까지 잡아낸다. 시간(500ms)만 여기서 더 조인다.
        */
       if (tap && elapsedTime < TAP_MAX_MS) {
         x.set(0); // 8px 이내라 사실상 0이지만, 다음 제스처를 위해 확실히 되돌린다

@@ -27,9 +27,13 @@
 /src/features/deck/         @stu-eonho
 /src/features/wishlist/     @stu-eonho
 /src/features/apply/        @stu-eonho
+/src/features/onboarding/   @stu-eonho
+/src/features/profile/      @stu-eonho
+/src/features/employer-ui/  @stu-eonho
 /src/pages/HomeDeckPage.tsx @stu-eonho
 /src/pages/WishlistPage.tsx @stu-eonho
 /src/pages/ApplyPage.tsx    @stu-eonho
+/src/pages/EmployerApplicantsPage.tsx @stu-eonho
 
 # ---------- 공동 소유 (딱 하나) ----------
 # 변경 시 이 파일만 담은 단독 커밋 + 즉시 공지. 커밋 메시지 접두사는 `contract:`

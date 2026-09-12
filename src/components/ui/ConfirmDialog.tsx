@@ -50,7 +50,9 @@ export function ConfirmDialog({
 
   // 호출부가 인라인 화살표 함수를 넘겨도 이펙트가 재실행되지 않도록 ref에 담는다
   const onCancelRef = useRef(onCancel);
-  onCancelRef.current = onCancel;
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  }, [onCancel]);
 
   const titleId = useId();
   const descId = useId();
@@ -127,10 +129,7 @@ export function ConfirmDialog({
           {title}
         </h2>
         {description && (
-          <p
-            id={descId}
-            className="text-muted mt-2 text-[14px] leading-[1.55] whitespace-pre-line"
-          >
+          <p id={descId} className="text-muted mt-2 text-[14px] leading-[1.55] whitespace-pre-line">
             {description}
           </p>
         )}

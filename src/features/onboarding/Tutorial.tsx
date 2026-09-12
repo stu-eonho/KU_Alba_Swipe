@@ -62,13 +62,16 @@ export function Tutorial({ open, onClose }: TutorialProps) {
 
   const close = useCallback(() => {
     markTutorialSeen();
+    setIndex(0);
     if (!isControlled) setSelfOpen(false);
     onClose?.();
   }, [isControlled, onClose]);
 
   // 인라인 화살표 함수를 넘겨도 keydown 이펙트가 재실행되지 않도록 ref 에 담는다
   const closeRef = useRef(close);
-  closeRef.current = close;
+  useEffect(() => {
+    closeRef.current = close;
+  }, [close]);
 
   const goNext = useCallback(() => {
     setIndex((i) => Math.min(i + 1, TUTORIAL_SLIDES.length - 1));
@@ -85,11 +88,6 @@ export function Tutorial({ open, onClose }: TutorialProps) {
       delete window.__albaswipeResetTutorial;
     };
   }, []);
-
-  /** 열릴 때마다 첫 장부터 */
-  useEffect(() => {
-    if (visible) setIndex(0);
-  }, [visible]);
 
   /** 포커스 트랩 + Escape + 스크롤 잠금 + 포커스 복귀 */
   useEffect(() => {
@@ -159,9 +157,7 @@ export function Tutorial({ open, onClose }: TutorialProps) {
 
   if (!visible) return null;
 
-  const enter = prefersReduced
-    ? { duration: 0 }
-    : { duration: ENTER_SEC, ease: EASE_STANDARD };
+  const enter = prefersReduced ? { duration: 0 } : { duration: ENTER_SEC, ease: EASE_STANDARD };
   const exit = prefersReduced ? { duration: 0 } : { duration: EXIT_SEC, ease: EASE_EXIT };
 
   const SlideIcon = slide.Icon;
@@ -204,10 +200,7 @@ export function Tutorial({ open, onClose }: TutorialProps) {
               <div className="bg-subtle flex h-[132px] w-[132px] items-center justify-center rounded-full">
                 <SlideIcon size={64} strokeWidth={1.5} className="text-ink" aria-hidden />
               </div>
-              <h2
-                id={titleId}
-                className="text-ink mt-8 text-[18px] leading-[1.4] font-semibold"
-              >
+              <h2 id={titleId} className="text-ink mt-8 text-[18px] leading-[1.4] font-semibold">
                 {slide.title}
               </h2>
               <p
@@ -239,12 +232,7 @@ export function Tutorial({ open, onClose }: TutorialProps) {
             {TUTORIAL_SLIDES.length}장 중 {index + 1}장. {slide.title}
           </p>
 
-          <Button
-            data-tutorial-primary
-            size="lg"
-            fullWidth
-            onClick={isLast ? close : goNext}
-          >
+          <Button data-tutorial-primary size="lg" fullWidth onClick={isLast ? close : goNext}>
             {isLast ? '시작하기' : '다음'}
           </Button>
         </footer>

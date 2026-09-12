@@ -41,7 +41,7 @@ export type SwipeCardProps = {
   exitDirection?: SwipeDirection | null;
   /** 드래그로 스와이프가 확정됐을 때. CardStack의 commitSwipe로 합류한다 */
   onCommit?: (direction: SwipeDirection) => void;
-  /** 탭(8px 미만 · 300ms 미만)으로 판정됐을 때 — 상세 보기 */
+  /** 탭(8px 미만 · 500ms 미만)으로 판정됐을 때 — 상세 보기 */
   onTap?: () => void;
   /**
    * 상세 카드와 공유할 motion layoutId. 맨 위 카드에만 준다.

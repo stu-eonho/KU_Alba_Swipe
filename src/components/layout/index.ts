@@ -8,6 +8,6 @@ export type { TopBarProps } from './TopBar';
 export { BottomTabBar } from './BottomTabBar';
 export type { BottomTabBarProps } from './BottomTabBar';
 
-export { RequireAuth } from './RequireAuth';
+export { RequireAuth, RequireRole } from './RequireAuth';
 
 export { ErrorBoundary } from './ErrorBoundary';

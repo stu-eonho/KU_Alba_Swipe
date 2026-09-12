@@ -11,6 +11,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { FullScreenSpinner } from '@/components/ui';
+import type { UserRole } from '@/types';
 
 export function RequireAuth({ children }: { children?: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -22,6 +23,24 @@ export function RequireAuth({ children }: { children?: React.ReactNode }) {
     // 로그인 후 원래 가려던 곳으로 되돌리기 위해 from을 실어 보낸다
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
+
+  return <>{children ?? <Outlet />}</>;
+}
+
+export function RequireRole({
+  role,
+  redirectTo,
+  children,
+}: {
+  role: UserRole;
+  redirectTo: string;
+  children?: React.ReactNode;
+}) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <FullScreenSpinner label="권한을 확인하는 중" />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== role) return <Navigate to={redirectTo} replace />;
 
   return <>{children ?? <Outlet />}</>;
 }
