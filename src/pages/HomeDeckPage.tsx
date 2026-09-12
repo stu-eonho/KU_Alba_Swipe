@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { SearchX, WifiOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { EmptyState, Skeleton, useToast } from '@/components/ui';
 import { ErrorBoundary } from '@/components/layout';
 import { CardStack, SwipeControls } from '@/features/deck';
@@ -18,7 +19,13 @@ import { useReviews } from '@/hooks/useReviews';
 import type { Job, SwipeDirection } from '@/types';
 
 export default function HomeDeckPage() {
-  const { jobs, isLoading, isError, retry, swipe, swipeError } = useDeck();
+  /**
+   * 시간이 맞지 않는 공고까지 볼지. "전체 보기"가 이 값만 뒤집고,
+   * useDeck이 같은 ['jobs'] 캐시를 로컬에서 다시 거르므로 네트워크 왕복이 없다.
+   */
+  const [includeIncompatible, setIncludeIncompatible] = useState(false);
+  const { jobs, isLoading, isError, retry, swipe, swipeError, hiddenCount, hasAvailability } =
+    useDeck(includeIncompatible);
   const toast = useToast();
 
   /**
@@ -41,8 +48,20 @@ export default function HomeDeckPage() {
     if (swipeError) toast.error('저장에 실패했어요. 네트워크를 확인해 주세요');
   }, [swipeError, toast]);
 
+  // 안내 줄은 로딩·에러가 아닐 때만. 덱이 비어 있어도(전부 걸러진 경우) 보여야 한다.
+  const notice = !isLoading && !isError && (
+    <AvailabilityNotice
+      hasAvailability={hasAvailability}
+      hiddenCount={hiddenCount}
+      includeIncompatible={includeIncompatible}
+      onToggle={() => setIncludeIncompatible((prev) => !prev)}
+    />
+  );
+  const hasNotice = Boolean(notice);
+
   return (
     <div className="flex flex-col overflow-hidden">
+      {notice}
       {isLoading ? (
         <DeckLoading />
       ) : isError ? (
@@ -74,6 +93,8 @@ export default function HomeDeckPage() {
             onSwipe={handleSwipe}
             onCardTap={setExpandedJob}
             expandedJobId={expandedJob?.id ?? null}
+            // 안내 줄이 있으면 카드 스택의 mt-4(16px)를 8px로 당긴다
+            className={hasNotice ? '-mt-2' : undefined}
           />
         </ErrorBoundary>
       )}
@@ -90,6 +111,59 @@ export default function HomeDeckPage() {
 function ExpandedCardWithReviews({ job, onClose }: { job: Job | null; onClose: () => void }) {
   const { reviews } = useReviews(job?.id ?? '');
   return <ExpandedCard job={job} onClose={onClose} reviews={reviews} />;
+}
+
+/**
+ * 덱 카드 위 한 줄. "내 가능 시간과 겹치지 않는 공고 N건을 숨겼어요" + 전체 보기.
+ *
+ * 규칙 세 가지:
+ *  1) 가능 시간을 등록하지 않았으면 숨긴 게 없다 → 등록을 권하는 줄로 바꾼다.
+ *  2) hiddenCount === 0 이면 줄을 아예 그리지 않는다. "0건을 숨겼어요"는 잡음이다.
+ *  3) 전체 보기로 켠 뒤에는 숨긴 게 아니라 함께 보고 있는 것이므로 문구도 바뀐다.
+ *
+ * 행 높이를 44px로 잡아 우측 텍스트 버튼이 그대로 터치 타겟 하한을 만족한다.
+ */
+function AvailabilityNotice({
+  hasAvailability,
+  hiddenCount,
+  includeIncompatible,
+  onToggle,
+}: {
+  hasAvailability: boolean;
+  hiddenCount: number;
+  includeIncompatible: boolean;
+  onToggle: () => void;
+}) {
+  const actionClass =
+    'text-muted shrink-0 inline-flex h-11 items-center px-1 text-[12px] leading-[1.35] font-medium underline underline-offset-2 transition-transform duration-100 ease-out active:scale-[0.97]';
+
+  if (!hasAvailability) {
+    return (
+      <div className="flex min-h-11 items-center justify-between gap-3 px-4">
+        <p className="text-faint min-w-0 text-[12px] leading-[1.35]">
+          가능한 시간을 등록하면 딱 맞는 공고만 보여드려요
+        </p>
+        <Link to="/settings" className={actionClass}>
+          설정하기
+        </Link>
+      </div>
+    );
+  }
+
+  if (hiddenCount === 0) return null;
+
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-3 px-4">
+      <p className="text-faint min-w-0 text-[12px] leading-[1.35]">
+        {includeIncompatible
+          ? `시간이 맞지 않는 공고 ${hiddenCount}건도 함께 보고 있어요`
+          : `내 가능 시간과 겹치지 않는 공고 ${hiddenCount}건을 숨겼어요`}
+      </p>
+      <button type="button" onClick={onToggle} className={actionClass}>
+        {includeIncompatible ? '맞는 공고만' : '전체 보기'}
+      </button>
+    </div>
+  );
 }
 
 /** <loading_state> 카드 모양 Skeleton 1장 + 컨트롤 버튼 비활성화 */
