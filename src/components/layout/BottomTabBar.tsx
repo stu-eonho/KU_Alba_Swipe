@@ -4,7 +4,8 @@
  * ALBASWIPE_SPEC.md <global_layout><bottom_tab_bar>
  *  높이 64px + env(safe-area-inset-bottom), 배경 surface, 상단 보더 1px line,
  *  fixed bottom 0, z-index 30.
- *  3탭: 홈(Home) / 찜(Heart) / 설정(Settings). 아이콘 24px + 라벨 11px/500, gap 4px.
+ *  구직자 3탭: 홈(Home) / 찜(Heart) / 설정(Settings).
+ *  사업자 4탭: 지원자 / 보류(Archive) / 내 공고 / 설정. 아이콘 24px + 라벨 11px/500, gap 4px.
  *  비활성 muted, 활성 ink-deep. Blind는 내비 활성을 레드가 아닌 잉크로 표시한다
  *  (레드는 CTA 전용). 찜 탭 개수 배지(16px 원, bg-brand, 흰 10px, 99 초과 "99+").
  *
@@ -12,7 +13,7 @@
  */
 import clsx from 'clsx';
 import { NavLink } from 'react-router-dom';
-import { BriefcaseBusiness, Heart, Home, Settings, UsersRound } from 'lucide-react';
+import { Archive, BriefcaseBusiness, Heart, Home, Settings, UsersRound } from 'lucide-react';
 import type { UserRole } from '@/types';
 
 export type BottomTabBarProps = {
@@ -28,8 +29,10 @@ const SEEKER_TABS = [
   { to: '/settings', label: '설정', Icon: Settings },
 ] as const;
 
+/** 보류 탭: 왼쪽으로 넘긴 지원자는 삭제가 아니라 여기로 간다 (PHASE4 B-2) */
 const EMPLOYER_TABS = [
   { to: '/employer/applicants', label: '지원자', Icon: UsersRound },
+  { to: '/employer/held', label: '보류', Icon: Archive },
   { to: '/employer/jobs', label: '내 공고', Icon: BriefcaseBusiness },
   { to: '/settings', label: '설정', Icon: Settings },
 ] as const;
