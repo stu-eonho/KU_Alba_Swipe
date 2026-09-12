@@ -15,14 +15,15 @@
  *
  * 탭바 찜 배지는 MainLayout에서 useWishlist().count로 연결한다.
  */
-import { createBrowserRouter, Navigate, Outlet, useMatches, useNavigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, useMatches } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
-import { AppShell, RequireAuth, RequireRole } from '@/components/layout';
+import { AppShell, RequireAuth, RequireRole, useSmartBack } from '@/components/layout';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useAuth } from '@/lib/auth-context';
 import { Tutorial } from '@/features/onboarding';
 import { EmployerJobsPlaceholder } from '@/features/employer-ui';
 import { ProfileEditor } from '@/features/profile';
+import { AvailabilityPage } from '@/features/availability';
 import { NotificationBell } from '@/features/notifications';
 import { IconButton } from '@/components/ui';
 import HomeDeckPage from '@/pages/HomeDeckPage';
@@ -92,16 +93,16 @@ function LegacyMeRedirect() {
   return <Navigate to={user?.role === 'employer' ? '/settings' : '/settings/profile'} replace />;
 }
 
-/** 지원 화면 — 탭바 없음, 상단에 뒤로가기만 */
+/** 지원 화면 — 탭바 없음, 상단에 뒤로가기만. 직접 연 링크는 홈으로 폴백. */
 function FullscreenLayout() {
-  const navigate = useNavigate();
+  const goBack = useSmartBack('/');
   const title = useRouteTitle();
   return (
     <AppShell
       title={title}
       showTabBar={false}
       topBarLeft={
-        <IconButton label="뒤로 가기" size={44} onClick={() => navigate(-1)}>
+        <IconButton label="뒤로 가기" size={44} onClick={goBack}>
           <ChevronLeft size={24} strokeWidth={1.75} aria-hidden />
         </IconButton>
       }
@@ -111,15 +112,16 @@ function FullscreenLayout() {
   );
 }
 
+/** backTo 는 고정 목적지가 아니라 히스토리가 없을 때의 폴백이다. */
 function SettingsFullscreenLayout({ backTo }: { backTo: string }) {
-  const navigate = useNavigate();
+  const goBack = useSmartBack(backTo);
   const title = useRouteTitle();
   return (
     <AppShell
       title={title}
       showTabBar={false}
       topBarLeft={
-        <IconButton label="뒤로 가기" size={44} onClick={() => navigate(backTo)}>
+        <IconButton label="뒤로 가기" size={44} onClick={goBack}>
           <ChevronLeft size={24} strokeWidth={1.75} aria-hidden />
         </IconButton>
       }
@@ -209,6 +211,11 @@ export const router = createBrowserRouter([
                 path: '/settings/applications',
                 element: <MyApplicationsPage />,
                 handle: { title: '지원 현황' },
+              },
+              {
+                path: '/settings/availability',
+                element: <AvailabilityPage />,
+                handle: { title: '가능한 시간' },
               },
             ],
           },

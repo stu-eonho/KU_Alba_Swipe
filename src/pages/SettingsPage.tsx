@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Bell,
-  ChevronRight,
-  ClipboardList,
-  Heart,
-  LogOut,
-  PlayCircle,
-  RotateCcw,
-  UserRound,
-} from 'lucide-react';
+import { Bell, CalendarClock, ChevronRight, ClipboardList, Heart, LogOut, PlayCircle, RotateCcw, UserRound } from 'lucide-react';
 import { Tutorial } from '@/features/onboarding';
 import { resetTutorial } from '@/features/onboarding/tutorialStorage';
 import { ConfirmDialog } from '@/features/settings/ConfirmDialog';
@@ -93,6 +84,12 @@ export default function SettingsPage() {
               icon={<ClipboardList size={20} />}
               label="지원 현황"
               onClick={() => navigate('/settings/applications')}
+            />
+            <Divider />
+            <MenuRow
+              icon={<CalendarClock size={20} />}
+              label="가능한 시간"
+              onClick={() => navigate('/settings/availability')}
             />
             <Divider />
             <MenuRow

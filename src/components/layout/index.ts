@@ -11,3 +11,7 @@ export type { BottomTabBarProps } from './BottomTabBar';
 export { RequireAuth, RequireRole } from './RequireAuth';
 
 export { ErrorBoundary } from './ErrorBoundary';
+
+export { useSmartBack } from './useSmartBack';
+
+export { AuthLayout } from './AuthLayout';

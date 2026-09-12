@@ -143,7 +143,7 @@ function AvailabilityNotice({
         <p className="text-faint min-w-0 text-[12px] leading-[1.35]">
           가능한 시간을 등록하면 딱 맞는 공고만 보여드려요
         </p>
-        <Link to="/settings" className={actionClass}>
+        <Link to="/settings/availability" className={actionClass}>
           설정하기
         </Link>
       </div>

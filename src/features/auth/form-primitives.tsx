@@ -103,14 +103,12 @@ export function SubmitButton({
 }
 
 /** 로그인·회원가입이 공유하는 바깥 틀. 로고 + 480px 중앙 정렬. */
-export function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col justify-center bg-app p-6">
-      <h1 className="mb-8 text-[28px] font-extrabold text-brand">AlbaSwipe</h1>
-      {children}
-    </div>
-  );
-}
+/**
+ * AuthLayout 은 로고·태그라인을 담고 있어 디자인 시스템 영역이다.
+ * Phase 5 에서 B 소유(`src/components/layout/AuthLayout.tsx`)로 옮겼고,
+ * 여기서는 재export 만 한다 — A 의 기존 import 경로를 깨뜨리지 않기 위해서다.
+ */
+export { AuthLayout } from '@/components/layout/AuthLayout';
 
 /**
  * 세션 복구 중에 보여주는 전체 화면 스피너.
