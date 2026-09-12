@@ -259,3 +259,19 @@ export async function updateJob(jobId: string, patch: JobPatch): Promise<Job> {
 
   return toJob(data as JobRow);
 }
+
+/**
+ * 공고 1건. 상세 화면이 씁니다.
+ *
+ * 덱 캐시(['jobs'])에서 찾지 않고 따로 읽는 이유는, 상세에서 찜을 누르면
+ * 그 공고가 덱 배열에서 빠지기 때문입니다. 덱을 보고 있으면 보던 공고가
+ * 화면에서 사라집니다. 단건 쿼리는 그 영향을 받지 않습니다.
+ *
+ * jobs 는 public read 라 로그인 없이도 읽힙니다. 없는 id 면 null 입니다.
+ */
+export async function fetchJob(jobId: string): Promise<Job | null> {
+  const { data, error } = await supabase.from('jobs').select('*').eq('id', jobId).maybeSingle();
+  if (error) throw error;
+
+  return data ? toJob(data as JobRow) : null;
+}

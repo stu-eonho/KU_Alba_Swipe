@@ -18,10 +18,17 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { Star } from 'lucide-react';
-import { useToast } from '@/components/ui';
+import { Button, Textarea, useToast } from '@/components/ui';
 import { useSeekerRating } from '@/hooks/useSeekerRating';
+import {
+  MAX_RATING_REASONS,
+  RATING_REASON_LABELS,
+  type RatingInput,
+  type RatingReasonCode,
+} from '@/types';
 
 const SCORES = [1, 2, 3, 4, 5] as const;
+const REASONS = Object.entries(RATING_REASON_LABELS) as Array<[RatingReasonCode, string]>;
 
 export type SeekerRatingProps = {
   /** 평가 대상 구직자의 user id. 없으면 훅이 쿼리를 돌리지 않는다 */
@@ -30,22 +37,59 @@ export type SeekerRatingProps = {
 };
 
 export function SeekerRating({ seekerId, className }: SeekerRatingProps) {
-  const { avg, count, myScore, rate, isRating } = useSeekerRating(seekerId);
+  const { avg, count, myScore, myReasons, myOtherReason, rate, isRating } =
+    useSeekerRating(seekerId);
   const toast = useToast();
-  /** 저장 왕복 동안 별이 비어 보이지 않게 눌린 점수를 잠깐 들고 있는다 */
-  const [pending, setPending] = useState<number | null>(null);
+  const sourceReasons = myReasons;
+  const sourceOther = myOtherReason ?? '';
+  const sourceKey = `${myScore ?? 0}|${sourceReasons.join(',')}|${sourceOther}`;
+  const [draft, setDraft] = useState<{
+    sourceKey: string;
+    score: number;
+    reasons: RatingReasonCode[];
+    otherReason: string;
+  }>(() => ({ sourceKey: '', score: 0, reasons: [], otherReason: '' }));
+  const current =
+    draft.sourceKey === sourceKey
+      ? draft
+      : { sourceKey, score: myScore ?? 0, reasons: sourceReasons, otherReason: sourceOther };
+  const otherInvalid = current.reasons.includes('other') && current.otherReason.trim().length < 2;
+  const canSave =
+    Boolean(seekerId) &&
+    !isRating &&
+    current.score >= 1 &&
+    current.score <= 5 &&
+    current.reasons.length >= 1 &&
+    current.reasons.length <= MAX_RATING_REASONS &&
+    !otherInvalid;
 
-  const filled = pending ?? myScore ?? 0;
+  const update = (next: Partial<Omit<typeof current, 'sourceKey'>>) =>
+    setDraft({ ...current, ...next, sourceKey });
 
-  const handleRate = async (score: number) => {
-    if (!seekerId || isRating) return;
-    setPending(score);
+  const toggleReason = (code: RatingReasonCode) => {
+    if (current.reasons.includes(code)) {
+      update({
+        reasons: current.reasons.filter((item) => item !== code),
+        ...(code === 'other' ? { otherReason: '' } : {}),
+      });
+      return;
+    }
+    if (current.reasons.length >= MAX_RATING_REASONS) return;
+    update({ reasons: [...current.reasons, code] });
+  };
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    const input: RatingInput = {
+      score: current.score as RatingInput['score'],
+      reasons: current.reasons,
+      otherReason: current.reasons.includes('other') ? current.otherReason.trim() : null,
+    };
     try {
-      await rate(score);
-      toast.success('평점을 남겼어요');
+      await rate(input);
+      toast.success('평가를 저장했어요');
     } catch {
-      setPending(null);
-      toast.error('평점을 저장하지 못했어요');
+      toast.error('평가를 저장하지 못했어요');
     }
   };
 
@@ -57,20 +101,77 @@ export function SeekerRating({ seekerId, className }: SeekerRatingProps) {
             key={score}
             type="button"
             aria-label={`${score}점 주기`}
-            aria-pressed={filled === score}
+            aria-pressed={current.score === score}
             disabled={!seekerId || isRating}
-            onClick={() => void handleRate(score)}
+            onClick={() => update({ score })}
             className="press-scale inline-flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-60"
           >
             <Star
               size={28}
               strokeWidth={1.75}
-              className={clsx(score <= filled ? 'text-star fill-star' : 'text-line')}
+              className={clsx(score <= current.score ? 'text-star fill-star' : 'text-line')}
               aria-hidden
             />
           </button>
         ))}
       </div>
+
+      <fieldset className="mt-4">
+        <legend className="text-[14px] font-semibold text-ink">왜 그렇게 평가했나요?</legend>
+        <p className="mt-1 text-[12px] text-faint">1~{MAX_RATING_REASONS}개를 선택해 주세요</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {REASONS.map(([code, label]) => {
+            const selected = current.reasons.includes(code);
+            const disabled =
+              isRating || (!selected && current.reasons.length >= MAX_RATING_REASONS);
+            return (
+              <button
+                key={code}
+                type="button"
+                aria-pressed={selected}
+                disabled={disabled}
+                onClick={() => toggleReason(code)}
+                className={clsx(
+                  'min-h-11 rounded-full border px-3 text-[13px] font-medium transition-colors disabled:opacity-40',
+                  selected
+                    ? 'border-brand bg-brand-soft text-brand'
+                    : 'border-line bg-surface text-muted',
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      {current.reasons.includes('other') && (
+        <Textarea
+          label="기타 사유"
+          value={current.otherReason}
+          onChange={(event) => update({ otherReason: event.target.value })}
+          maxLength={100}
+          placeholder="예: 장기 근무 가능 여부를 확인하고 싶어요"
+          error={
+            current.otherReason.length > 0 && otherInvalid
+              ? '기타 사유를 2자 이상 입력해 주세요'
+              : undefined
+          }
+          hint={current.otherReason.length === 0 ? '2~100자로 입력해 주세요' : undefined}
+          className="min-h-24"
+          containerClassName="mt-3"
+        />
+      )}
+
+      <Button
+        fullWidth
+        className="mt-4"
+        disabled={!canSave}
+        loading={isRating}
+        onClick={() => void handleSave()}
+      >
+        평가 저장
+      </Button>
 
       <p className="mt-1 text-[13px] leading-[1.4] text-faint">
         {count === 0 ? (

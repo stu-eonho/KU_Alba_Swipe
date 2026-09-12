@@ -20,13 +20,14 @@
 import { useId } from 'react';
 import clsx from 'clsx';
 import { Check } from 'lucide-react';
+import { RequiredMark } from './RequiredMark';
 
 export type CheckboxProps = {
   checked: boolean;
   onChange: (checked: boolean) => void;
   /** 링크가 섞일 수 있어 ReactNode */
   label: React.ReactNode;
-  /** true면 라벨 앞에 "[필수]" 표시 */
+  /** true면 라벨 뒤에 접근 가능한 별표 표시 */
   required?: boolean;
   /** 라벨 아래 12px faint 보조 설명 */
   description?: string;
@@ -69,6 +70,8 @@ export function Checkbox({
           className="peer sr-only"
           checked={checked}
           disabled={disabled}
+          required={required}
+          aria-required={required || undefined}
           aria-invalid={hasError || undefined}
           aria-describedby={describedBy}
           onChange={(e) => onChange(e.target.checked)}
@@ -95,8 +98,8 @@ export function Checkbox({
             disabled ? 'text-faint' : 'text-ink',
           )}
         >
-          {required && <span className="text-error mr-1 font-semibold">[필수]</span>}
           {label}
+          {required && <RequiredMark />}
           {description && (
             <span id={descId} className="text-faint mt-1 block text-[12px] leading-[1.45]">
               {description}

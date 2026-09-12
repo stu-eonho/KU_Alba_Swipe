@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge, EmptyState, Skeleton } from '@/components/ui';
 import {
   MY_APPLICATION_STATUS_LABEL,
+  applicationBarClass,
   applicationBadgeVariant,
   formatApplicationDate,
 } from '@/features/apply/applicationPresentation';
@@ -51,13 +52,17 @@ export default function MyApplicationsPage() {
   }
 
   return (
-    <ul className="divide-y divide-line-soft border-y border-line-soft bg-surface">
+    <ul className="flex flex-col gap-2 px-3 py-3">
       {applications.map((application) => (
         <li key={application.id}>
           <Link
             to={`/settings/applications/${application.id}`}
-            className="flex min-h-[72px] items-center gap-3 px-4 py-3 active:bg-subtle"
+            className="border-line-soft relative flex min-h-[80px] items-center gap-3 rounded-tile border bg-surface py-3 pr-3 pl-5 active:bg-subtle"
           >
+            <span
+              className={`absolute top-3 bottom-3 left-2 w-[3px] rounded-full ${applicationBarClass(application.status)}`}
+              aria-hidden
+            />
             <div className="min-w-0 flex-1">
               <p className="clamp-1 text-[15px] font-semibold text-ink">
                 {application.job.storeName}

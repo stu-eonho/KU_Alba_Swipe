@@ -15,6 +15,8 @@ export type { IconButtonProps } from './IconButton';
 export { Input, Textarea } from './Input';
 export type { InputProps, TextareaProps } from './Input';
 
+export { RequiredMark } from './RequiredMark';
+
 export { Checkbox } from './Checkbox';
 export type { CheckboxProps } from './Checkbox';
 

@@ -245,10 +245,16 @@ export function InteractiveTutorial({
     }
   }, []);
 
-  /** 설명 카드는 스포트라이트를 가리지 않게 반대쪽에 붙는다(덱이 위면 카드는 아래). */
-  const cardPosition = useMemo(
-    () => placeCard(anchorRect, viewportHeight, cardHeight),
-    [anchorRect, viewportHeight, cardHeight],
+  const effectiveAnchor = useMemo(() => {
+    if (role !== 'employer' || !anchorRect || viewportHeight <= 0) return anchorRect;
+    const freeAbove = anchorRect.top;
+    const freeBelow = viewportHeight - (anchorRect.top + anchorRect.height);
+    return Math.max(freeAbove, freeBelow) >= cardHeight + GAP + EDGE ? anchorRect : null;
+  }, [anchorRect, cardHeight, role, viewportHeight]);
+
+  const effectiveCardPosition = useMemo(
+    () => placeCard(effectiveAnchor, viewportHeight, cardHeight, role === 'employer'),
+    [effectiveAnchor, viewportHeight, cardHeight, role],
   );
 
   if (!open) return null;
@@ -282,16 +288,16 @@ export function InteractiveTutorial({
       {/* 기다리지 않는 단계에서는 뒤 화면 조작을 막는다. 기다리는 단계에서는 걷는다. */}
       {!waiting && <div className="pointer-events-auto absolute inset-0" aria-hidden />}
 
-      {anchorRect ? (
+      {effectiveAnchor ? (
         /* 스포트라이트 — 이 사각형만 칠해지지 않아 뒤의 앱이 그대로 보인다 */
         <div
           aria-hidden
           className="dialog-backdrop pointer-events-none fixed"
           style={{
-            top: anchorRect.top - padding,
-            left: anchorRect.left - padding,
-            width: anchorRect.width + padding * 2,
-            height: anchorRect.height + padding * 2,
+            top: effectiveAnchor.top - padding,
+            left: effectiveAnchor.left - padding,
+            width: effectiveAnchor.width + padding * 2,
+            height: effectiveAnchor.height + padding * 2,
             borderRadius: radius,
             boxShadow: '0 0 0 9999px var(--color-scrim)',
           }}
@@ -306,22 +312,26 @@ export function InteractiveTutorial({
       )}
 
       {/* 우상단 건너뛰기 — 언제든 빠져나갈 수 있다 */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 mx-auto flex max-w-[480px] justify-end px-4 pt-3">
-        <IconButton
-          label="튜토리얼 건너뛰기"
-          variant="scrim"
-          className="pointer-events-auto"
-          onClick={close}
-        >
-          <X size={22} strokeWidth={1.75} aria-hidden />
-        </IconButton>
-      </div>
+      {role !== 'employer' && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 mx-auto flex max-w-[480px] justify-end px-4 pt-3">
+          <IconButton
+            label="튜토리얼 건너뛰기"
+            variant="scrim"
+            className="pointer-events-auto"
+            onClick={close}
+          >
+            <X size={22} strokeWidth={1.75} aria-hidden />
+          </IconButton>
+        </div>
+      )}
 
       {/* 설명 카드 */}
       <div
         ref={setCardRef}
-        className="pointer-events-none absolute left-1/2 w-full max-w-[480px] -translate-x-1/2 px-4"
-        style={cardPosition}
+        className={`pointer-events-none absolute left-1/2 w-full -translate-x-1/2 px-4 ${
+          role === 'employer' ? 'max-w-[392px]' : 'max-w-[480px]'
+        }`}
+        style={effectiveCardPosition}
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -329,11 +339,31 @@ export function InteractiveTutorial({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1, transition: enter }}
             exit={{ opacity: 0, transition: exit }}
-            className="bg-surface border-line pointer-events-auto rounded-card border p-5"
+            className={`bg-surface border-line pointer-events-auto rounded-card border ${
+              role === 'employer' ? 'p-4' : 'p-5'
+            }`}
           >
-            <h2 id={titleId} className="text-ink text-[18px] leading-[1.4] font-semibold">
-              {step.title}
-            </h2>
+            <div className="flex items-start gap-2">
+              <h2
+                id={titleId}
+                className={`text-ink min-w-0 flex-1 leading-[1.4] font-semibold ${
+                  role === 'employer' ? 'pt-2 text-[17px]' : 'text-[18px]'
+                }`}
+              >
+                {step.title}
+              </h2>
+              {role === 'employer' && (
+                <IconButton
+                  label="튜토리얼 건너뛰기"
+                  size={44}
+                  variant="plain"
+                  className="-mt-1 -mr-2 shrink-0"
+                  onClick={close}
+                >
+                  <X size={20} strokeWidth={1.75} aria-hidden />
+                </IconButton>
+              )}
+            </div>
             <p id={bodyId} className="text-body mt-2 text-[14px] leading-[1.6] whitespace-pre-line">
               {step.body}
             </p>
@@ -341,12 +371,14 @@ export function InteractiveTutorial({
             {waiting && (
               <p className="text-faint mt-3 text-[12px] leading-[1.4]">
                 {role === 'employer'
-                  ? '직접 밀어보거나 다음을 눌러 계속하세요'
+                  ? '지원자에게 바로 알림이 갑니다'
                   : '직접 한 번 해보세요. 잠시 뒤 건너뛸 수 있어요'}
               </p>
             )}
 
-            <div className="mt-5 flex flex-col items-center gap-4">
+            <div
+              className={`${role === 'employer' ? 'mt-4 gap-3' : 'mt-5 gap-4'} flex flex-col items-center`}
+            >
               {/* 점 인디케이터 — 장식. 보조기술에는 아래 live 영역으로 전달한다 */}
               <div className="flex items-center gap-1.5" aria-hidden>
                 {steps.map((s, i) => (
@@ -396,11 +428,14 @@ function placeCard(
   rect: AnchorRect | null,
   viewportHeight: number,
   cardHeight: number,
+  compact = false,
 ): React.CSSProperties {
   if (viewportHeight <= 0) return { top: MIN_TOP };
 
   if (!rect) {
-    return { top: Math.max(MIN_TOP, Math.round((viewportHeight - cardHeight) / 2)) };
+    return {
+      top: Math.max(compact ? EDGE : MIN_TOP, Math.round((viewportHeight - cardHeight) / 2)),
+    };
   }
 
   const freeBelow = viewportHeight - (rect.top + rect.height);

@@ -92,6 +92,14 @@ export type AppUser = {
   /** auth.users.user_metadata.nickname */
   nickname: string;
   /**
+   * 숫자 11자리 휴대전화번호 ("01012345678").
+   *
+   * optional 인 이유는 하위 호환입니다 — Phase 11 이전에 가입한 계정과
+   * 구버전 세션에는 이 값이 없습니다. 신규 가입은 필수로 받습니다.
+   * 화면에 보일 때는 formatPhone() 으로 010-1234-5678 형태로 바꿉니다.
+   */
+  phone?: string | null;
+  /**
    * auth.users.user_metadata.role.
    * Phase 1 에 만들어진 계정에는 이 값이 없습니다. 없으면 'seeker' 로 봅니다 —
    * 기존 계정이 로그인했을 때 화면이 비는 것보다 구직자로 보이는 편이 낫습니다.
@@ -303,3 +311,57 @@ export const REGIONS = [
 ] as const;
 
 export type Region = (typeof REGIONS)[number];
+
+/**
+ * 매칭된 상대의 연락처.
+ *
+ * 상호 관심(양쪽 offers.direction='right')이 확인됐을 때만 값이 채워집니다.
+ * 매칭이 아니거나 상대 id 가 틀리면 **둘 다 null** 이고, 두 경우를 구분하지
+ * 않습니다 — 구분하는 순간 "이 사람과 매칭되지 않았다"는 정보가 새어 나갑니다.
+ */
+export type PhoneContact = {
+  email: string | null;
+  phone: string | null;
+};
+
+/** 구인자가 지원자를 평가한 이유. 고정 목록이며 자유 입력은 'other' 하나뿐입니다. */
+export type RatingReasonCode =
+  | 'reliable'
+  | 'relevant_experience'
+  | 'communication'
+  | 'schedule_fit'
+  | 'friendly'
+  | 'quick_learner'
+  | 'teamwork'
+  | 'other';
+
+/** 사유 코드 → 화면 문구. B 가 칩으로 그립니다. */
+export const RATING_REASON_LABELS: Record<RatingReasonCode, string> = {
+  reliable: '성실해요',
+  relevant_experience: '경험이 맞아요',
+  communication: '소통이 잘 돼요',
+  schedule_fit: '시간이 맞아요',
+  friendly: '친절해요',
+  quick_learner: '빨리 배워요',
+  teamwork: '협업이 좋아요',
+  other: '직접 입력',
+};
+
+/** 한 번에 고를 수 있는 사유 개수. 더 늘리면 평가의 의미가 희석됩니다 */
+export const MAX_RATING_REASONS = 3;
+/** 'other' 를 골랐을 때 직접 입력의 길이 범위 */
+export const RATING_OTHER_MIN = 2;
+export const RATING_OTHER_MAX = 100;
+
+/**
+ * 평가 저장 입력.
+ *
+ * reasons 는 1~3개이고, 'other' 가 들어 있으면 otherReason 이 필수입니다.
+ * 'other' 를 빼면 otherReason 은 null 이어야 합니다 — DB CHECK 가 같은 규칙을
+ * 다시 검사하므로 화면 검증을 우회해도 저장되지 않습니다.
+ */
+export type RatingInput = {
+  score: 1 | 2 | 3 | 4 | 5;
+  reasons: RatingReasonCode[];
+  otherReason: string | null;
+};

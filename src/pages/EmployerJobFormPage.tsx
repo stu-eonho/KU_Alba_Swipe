@@ -14,8 +14,16 @@ import { JOB_CATEGORIES } from '@/lib/api/jobs';
 import { toHHMM } from '@/lib/availability';
 import { useCreateJob } from '@/hooks/useEmployerJobs';
 import { JobImageField } from '@/features/employer-ui';
-import { Field, FormBanner, SubmitButton, TextareaField } from '@/features/auth/form-primitives';
+import {
+  Field,
+  FormBanner,
+  RequiredMark,
+  SubmitButton,
+  TextareaField,
+} from '@/features/auth/form-primitives';
+import { focusFirstError } from '@/features/auth/focusFirstError';
 import { PERSONALITY_TRAITS, WEEKDAYS, type PersonalityTrait, type Weekday } from '@/types';
+import { MIN_HOURLY_WAGE, minWageMessage } from '@/lib/wage';
 
 const TIME_OPTIONS = Array.from({ length: 49 }, (_, index) => index * 30);
 const BENEFIT_OPTIONS = [
@@ -29,7 +37,6 @@ const BENEFIT_OPTIONS = [
   '유니폼제공',
 ];
 
-const MIN_WAGE = 10_320; // 2026년 최저임금
 const MAX_SUMMARY = 60;
 const MAX_DESCRIPTION = 1000;
 
@@ -74,8 +81,8 @@ export default function EmployerJobFormPage() {
       storeName: storeName.trim().length < 2 ? '가게 이름을 2자 이상 입력해 주세요' : undefined,
       hourlyWage: !Number.isFinite(wage)
         ? '시급을 숫자로 입력해 주세요'
-        : wage < MIN_WAGE
-          ? `2026년 최저임금(${MIN_WAGE.toLocaleString()}원) 이상이어야 합니다`
+        : wage < MIN_HOURLY_WAGE
+          ? minWageMessage()
           : undefined,
       summary: summary.trim().length < 5 ? '한 줄 요약을 5자 이상 입력해 주세요' : undefined,
       address: address.trim().length < 5 ? '주소를 입력해 주세요' : undefined,
@@ -89,7 +96,11 @@ export default function EmployerJobFormPage() {
 
     const next = validate();
     setErrors(next);
-    if (Object.values(next).some(Boolean)) return;
+    if (Object.values(next).some(Boolean)) {
+      // 화면에 보이는 순서 그대로. 사용자가 위에서부터 고치게 됩니다.
+      focusFirstError(['storeName', 'hourlyWage', 'summary', 'address', 'days'], next);
+      return;
+    }
 
     try {
       await createJob({
@@ -130,6 +141,8 @@ export default function EmployerJobFormPage() {
 
         <Field
           label="가게 이름"
+          name="storeName"
+          required
           type="text"
           value={storeName}
           onChange={(value) => {
@@ -147,6 +160,7 @@ export default function EmployerJobFormPage() {
             className="mb-1.5 block text-[13px] font-semibold text-muted"
           >
             업종
+            <RequiredMark />
           </label>
           <select
             id="job-category"
@@ -165,6 +179,8 @@ export default function EmployerJobFormPage() {
 
         <Field
           label="시급 (원)"
+          name="hourlyWage"
+          required
           type="text"
           value={hourlyWage}
           onChange={(value) => {
@@ -173,12 +189,14 @@ export default function EmployerJobFormPage() {
             setErrors((prev) => ({ ...prev, hourlyWage: undefined }));
           }}
           error={errors.hourlyWage}
-          placeholder={String(MIN_WAGE)}
+          placeholder={String(MIN_HOURLY_WAGE)}
           disabled={isCreating}
         />
 
         <Field
           label="한 줄 요약"
+          name="summary"
+          required
           type="text"
           value={summary}
           onChange={(value) => {
@@ -192,6 +210,8 @@ export default function EmployerJobFormPage() {
 
         <Field
           label="주소"
+          name="address"
+          required
           type="text"
           value={address}
           onChange={(value) => {
@@ -203,8 +223,11 @@ export default function EmployerJobFormPage() {
           disabled={isCreating}
         />
 
-        <div>
-          <p className="mb-2 text-[13px] font-semibold text-muted">근무 요일</p>
+        <div data-field="days">
+          <p className="mb-2 text-[13px] font-semibold text-muted">
+            근무 요일
+            <RequiredMark />
+          </p>
           <div className="flex flex-wrap gap-2">
             {WEEKDAYS.map((day) => {
               const selected = days.includes(day);
@@ -233,7 +256,10 @@ export default function EmployerJobFormPage() {
         </div>
 
         <div>
-          <p className="mb-2 text-[13px] font-semibold text-muted">근무 시간</p>
+          <p className="mb-2 text-[13px] font-semibold text-muted">
+            근무 시간
+            <RequiredMark />
+          </p>
           <div className="flex items-center gap-2">
             <ClockSelect
               label="시작 시간"

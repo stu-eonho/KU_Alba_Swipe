@@ -90,7 +90,7 @@ export function ApplicantDeckCard({
             willChange: 'transform',
           }}
         >
-          <ApplicantSwipeCard entry={entry} />
+          <ApplicantSwipeCard entry={entry} tourAnchor={isTop} />
           {/* 날아가는 동안에도 스탬프를 유지한다 (x가 커져 opacity는 1로 고정된다) */}
           {depth <= 0 && (
             <ApplicantSwipeOverlay likeOpacity={likeOpacity} nopeOpacity={nopeOpacity} />

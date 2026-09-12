@@ -3,11 +3,12 @@
  *
  * 매칭된 상대의 이메일. 채팅 대신 연락처를 여는 경로입니다.
  *
- *   const { email, isLoading, isError, retry } = useMatchedContact(counterpartId);
+ *   const { contact, isLoading, isError, retry } = useMatchedContact(counterpartId);
+ *   contact?.email / contact?.phone
  *
  * B (PHASE6 B-2): mutual_match 알림의 payload.counterpartId 를 그대로 넘기세요.
  *
- *   email === null  → 아직 매칭이 아니거나 볼 권한이 없습니다.
+ *   contact === null → 아직 매칭이 아니거나 볼 권한이 없습니다.
  *                     두 경우를 구분하지 마세요 — 구분해서 보여주면 그 자체가
  *                     "이 사람과 매칭되지 않았다"는 정보를 흘립니다.
  *                     "연락처를 불러오지 못했어요" 한 문구로 처리하세요.
@@ -20,15 +21,25 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import type { PhoneContact } from '@/types';
 
-export async function fetchMatchedContact(counterpartId: string): Promise<string | null> {
-  const { data, error } = await supabase.rpc('matched_contact', {
+export async function fetchMatchedContact(counterpartId: string): Promise<PhoneContact | null> {
+  const { data, error } = await supabase.rpc('matched_contact_v2', {
     counterpart: counterpartId,
   });
   if (error) throw error;
 
-  // 함수가 text 를 돌려주므로 문자열이거나 null 입니다.
-  return typeof data === 'string' && data.length > 0 ? data : null;
+  // 매칭이 아니거나 상대 id 가 틀리면 null 입니다. 두 경우를 구분하지 않습니다.
+  if (!data || typeof data !== 'object') return null;
+
+  const row = data as { email?: unknown; phone?: unknown };
+  const email = typeof row.email === 'string' && row.email ? row.email : null;
+  const phone = typeof row.phone === 'string' && row.phone ? row.phone : null;
+
+  // 둘 다 비면 볼 것이 없습니다. 화면이 빈 시트를 그리지 않게 null 로 통일합니다.
+  if (!email && !phone) return null;
+
+  return { email, phone };
 }
 
 export function useMatchedContact(counterpartId?: string) {
@@ -44,7 +55,10 @@ export function useMatchedContact(counterpartId?: string) {
   });
 
   return {
-    email: query.data ?? null,
+    /** { email, phone }. 매칭이 아니면 null — 이유를 구분해 보여주지 마세요 */
+    contact: query.data ?? null,
+    /** 예전 호출부 호환. 새 화면은 contact 를 쓰세요 */
+    email: query.data?.email ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
     retry: query.refetch,

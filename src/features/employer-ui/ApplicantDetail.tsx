@@ -173,9 +173,12 @@ export function ApplicantDetail({
             disabled={entry.status === 'accepted'}
             onClick={() => onSetStatus(entry.id, 'accepted')}
           >
-            채용
+            관심 보내기
           </Button>
         </footer>
+        <p className="border-line-soft border-t bg-surface px-4 pb-3 text-center text-[12px] leading-[1.45] text-faint">
+          상대도 관심을 표시하면 연락처가 열려요
+        </p>
       </div>
     </div>
   );

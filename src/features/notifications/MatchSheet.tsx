@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button, Spinner, useToast } from '@/components/ui';
-import { useMatchedContact } from './useMatchedContact';
+import { useMatchedContact } from '@/hooks/useMatchedContact';
 
 export type MatchSheetProps = {
   open: boolean;
@@ -41,7 +41,7 @@ function MatchPanel({ counterpartId, storeName, onClose }: Omit<MatchSheetProps,
   const toast = useToast();
 
   // 클립보드가 막힌 환경(비 HTTPS, 구형 웹뷰)에서는 텍스트를 직접 선택하게 열어준다
-  const [selectable, setSelectable] = useState(false);
+  const [selectable, setSelectable] = useState<'email' | 'phone' | null>(null);
 
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -51,7 +51,10 @@ function MatchPanel({ counterpartId, storeName, onClose }: Omit<MatchSheetProps,
   const titleId = useId();
   const descId = useId();
 
-  const { email, isLoading } = useMatchedContact(counterpartId);
+  const { contact, isLoading, isError, retry } = useMatchedContact(counterpartId ?? undefined);
+  const email = contact?.email ?? null;
+  const phone = contact?.phone ?? null;
+  const formattedPhone = formatPhone(phone);
   const name = storeName?.trim() || '상대방';
 
   useEffect(() => {
@@ -96,22 +99,24 @@ function MatchPanel({ counterpartId, storeName, onClose }: Omit<MatchSheetProps,
     };
   }, []);
 
-  const handleCopy = useCallback(async () => {
-    if (!email) return;
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
-      await navigator.clipboard.writeText(email);
-      toast.success('이메일을 복사했어요');
-    } catch {
-      // 복사가 막혔다고 화면을 막지 않는다 — 직접 선택해서 가져갈 수 있게 열어준다
-      setSelectable(true);
-      toast.error('복사할 수 없어요. 이메일을 길게 눌러 직접 복사해 주세요');
-    }
-  }, [email, toast]);
+  const handleCopy = useCallback(
+    async (kind: 'email' | 'phone', value: string) => {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+        await navigator.clipboard.writeText(value);
+        toast.success(kind === 'email' ? '이메일을 복사했어요' : '전화번호를 복사했어요');
+      } catch {
+        setSelectable(kind);
+        toast.error('복사할 수 없어요. 연락처를 길게 눌러 직접 복사해 주세요');
+      }
+    },
+    [toast],
+  );
 
   const mailtoHref = email
     ? `mailto:${email}?subject=${encodeURIComponent(`[AlbaSwipe] ${name} 아르바이트 문의`)}`
     : undefined;
+  const telHref = phone ? `tel:${phone.replace(/[^0-9+]/g, '')}` : undefined;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center">
@@ -151,25 +156,37 @@ function MatchPanel({ counterpartId, storeName, onClose }: Omit<MatchSheetProps,
               <Spinner size={16} label="상대 정보를 불러오는 중" />
               <span className="text-[14px]">연락처를 불러오는 중</span>
             </div>
-          ) : email ? (
-            <div className="flex items-center gap-2">
-              <span className="text-faint w-12 shrink-0 text-[13px]">이메일</span>
-              <span
-                className={`text-ink min-w-0 flex-1 truncate text-[14px] leading-[1.45] ${
-                  selectable ? 'select-all' : ''
-                }`}
-              >
-                {email}
-              </span>
-              <Button
-                variant="ghost"
-                size="md"
-                onClick={() => void handleCopy()}
-                className="-mr-2 shrink-0 px-3"
-                aria-label="이메일 복사"
-              >
-                복사
-              </Button>
+          ) : isError ? (
+            <div className="flex min-h-11 items-center justify-between gap-2">
+              <span className="text-muted text-[14px]">연락처를 불러오지 못했어요</span>
+              {retry && (
+                <Button variant="ghost" size="md" onClick={() => void retry()}>
+                  다시 시도
+                </Button>
+              )}
+            </div>
+          ) : email || phone ? (
+            <div className="flex flex-col gap-1">
+              {email && (
+                <ContactRow
+                  label="이메일"
+                  value={email}
+                  selectable={selectable === 'email'}
+                  onCopy={() => void handleCopy('email', email)}
+                />
+              )}
+              {formattedPhone ? (
+                <ContactRow
+                  label="전화번호"
+                  value={formattedPhone}
+                  selectable={selectable === 'phone'}
+                  onCopy={() => void handleCopy('phone', phone ?? formattedPhone)}
+                />
+              ) : (
+                <p className="text-faint flex min-h-11 items-center text-[13px]">
+                  전화번호가 등록되지 않았어요
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-muted flex min-h-11 items-center text-[14px] leading-[1.55]">
@@ -178,7 +195,7 @@ function MatchPanel({ counterpartId, storeName, onClose }: Omit<MatchSheetProps,
           )}
         </div>
 
-        <div className="mt-5">
+        <div className="mt-5 flex flex-col gap-2">
           {mailtoHref ? (
             <a
               href={mailtoHref}
@@ -192,8 +209,50 @@ function MatchPanel({ counterpartId, storeName, onClose }: Omit<MatchSheetProps,
               메일 보내기
             </Button>
           )}
+          {telHref && (
+            <a
+              href={telHref}
+              onClick={onClose}
+              className="border-brand text-brand rounded-field flex h-11 w-full items-center justify-center border-[1.5px] text-[14px] leading-[1.4] font-semibold transition-transform duration-100 ease-out select-none active:scale-[0.97]"
+            >
+              전화하기
+            </a>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function ContactRow({
+  label,
+  value,
+  selectable,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  selectable: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="flex min-h-11 items-center gap-2">
+      <span className="text-faint w-14 shrink-0 text-[13px]">{label}</span>
+      <span
+        className={`text-ink min-w-0 flex-1 truncate text-[14px] ${selectable ? 'select-all' : ''}`}
+      >
+        {value}
+      </span>
+      <Button variant="ghost" size="md" onClick={onCopy} className="-mr-2 shrink-0 px-3">
+        복사
+      </Button>
+    </div>
+  );
+}
+
+function formatPhone(value: string | null): string | null {
+  if (!value) return null;
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  return value;
 }
