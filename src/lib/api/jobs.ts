@@ -26,6 +26,8 @@ export type JobRow = {
   employer_id?: string | null;
   // Phase 6 마이그레이션 전에 만들어진 행에는 이 컬럼이 없습니다.
   wanted_traits?: string[] | null;
+  // Phase 7. 없으면 주소에서 뽑습니다.
+  region?: string | null;
 };
 
 type ReviewRow = {
@@ -56,6 +58,9 @@ export function toJob(row: JobRow): Job {
     imageUrl: row.image_url,
     employerId: row.employer_id ?? null,
     wantedTraits: (row.wanted_traits as PersonalityTrait[] | null | undefined) ?? [],
+    // 컬럼이 비어 있어도 화면이 빈 문자열을 받지 않게 주소에서 채웁니다.
+    // "서울 성북구 안암로 145" → "서울"
+    region: row.region?.trim() || row.address.split(' ')[0] || '',
   };
 }
 
@@ -180,6 +185,8 @@ export async function createJob(input: NewJob): Promise<Job> {
       work_hours: input.workHours,
       benefits: input.benefits,
       wanted_traits: input.wantedTraits,
+      // 주소에서 뽑아 함께 넣습니다. 트리거 없이도 새 공고가 지역 필터에 잡힙니다.
+      region: input.address.trim().split(' ')[0] ?? '',
       image_url: input.imageUrl,
     })
     .select()
