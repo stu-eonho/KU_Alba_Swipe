@@ -9,6 +9,25 @@
  */
 import { useId } from 'react';
 
+/**
+ * 필수 입력 표시.
+ *
+ * 별표만 두면 스크린리더가 "애스터리스크"라고 읽거나 아예 건너뜁니다.
+ * 눈으로 보는 별표는 aria-hidden 으로 감추고 "필수" 라는 말을 따로 읽힙니다.
+ *
+ * B 가 components/ui/RequiredMark 를 올리면 이 구현만 갈아끼우면 됩니다.
+ */
+export function RequiredMark() {
+  return (
+    <>
+      <span aria-hidden className="ml-0.5 text-brand">
+        *
+      </span>
+      <span className="sr-only">필수</span>
+    </>
+  );
+}
+
 type FieldProps = {
   label: string;
   type: 'text' | 'email' | 'password';
@@ -19,6 +38,11 @@ type FieldProps = {
   autoComplete?: string;
   placeholder?: string;
   disabled?: boolean;
+  /** 라벨 옆에 * 와 스크린리더용 "필수" 를 붙입니다 */
+  required?: boolean;
+  inputMode?: 'text' | 'numeric' | 'tel';
+  /** 제출 실패 시 이 필드로 스크롤·포커스하기 위한 앵커 */
+  name?: string;
 };
 
 export function Field({
@@ -31,17 +55,25 @@ export function Field({
   autoComplete,
   placeholder,
   disabled,
+  required,
+  inputMode,
+  name,
 }: FieldProps) {
   const id = useId();
   const errorId = `${id}-error`;
 
   return (
-    <div>
+    // data-field 는 제출 실패 시 첫 오류 필드를 찾아 스크롤하는 앵커입니다.
+    <div data-field={name}>
       <label htmlFor={id} className="mb-1.5 block text-[13px] font-semibold text-muted">
         {label}
+        {required && <RequiredMark />}
       </label>
       <input
         id={id}
+        name={name}
+        inputMode={inputMode}
+        aria-required={required || undefined}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -227,6 +259,8 @@ export function TextareaField({
   placeholder,
   hint,
   disabled,
+  required,
+  name,
 }: {
   label: string;
   value: string;
@@ -235,13 +269,16 @@ export function TextareaField({
   placeholder?: string;
   hint?: string;
   disabled?: boolean;
+  required?: boolean;
+  name?: string;
 }) {
   const id = useId();
 
   return (
-    <div>
+    <div data-field={name}>
       <label htmlFor={id} className="mb-1.5 block text-[13px] font-semibold text-muted">
         {label}
+        {required && <RequiredMark />}
       </label>
       <textarea
         id={id}

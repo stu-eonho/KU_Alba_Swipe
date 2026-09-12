@@ -29,16 +29,20 @@ import {
   TextareaField,
 } from '@/features/auth/form-primitives';
 import {
+  formatPhoneInput,
+  normalizePhone,
   validateEmail,
   validateNickname,
   validatePassword,
   validatePasswordConfirm,
+  validatePhone,
 } from '@/features/auth/validation';
 import type { UserRole } from '@/types';
 import { MAX_INTRO_LENGTH } from '@/lib/profile-limits';
 
 type FieldErrors = {
   nickname?: string;
+  phone?: string;
   email?: string;
   password?: string;
   passwordConfirm?: string;
@@ -51,6 +55,7 @@ export default function SignupPage() {
 
   // 1단계
   const [nickname, setNickname] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -83,6 +88,7 @@ export default function SignupPage() {
     setBanner(null);
     const nextErrors: FieldErrors = {
       nickname: validateNickname(nickname),
+      phone: validatePhone(phone),
       email: validateEmail(email),
       password: validatePassword(password),
       passwordConfirm: password !== passwordConfirm ? '비밀번호가 일치하지 않습니다' : undefined,
@@ -96,7 +102,7 @@ export default function SignupPage() {
     setBanner(null);
     setIsPending(true);
     try {
-      await signUp({ email, password, nickname, role });
+      await signUp({ email, password, nickname, role, phone: normalizePhone(phone) });
 
       if (role === 'seeker') {
         // 닉네임을 프로필에도 복사합니다. auth 스키마는 API 로 노출되지 않아서,
@@ -168,6 +174,8 @@ export default function SignupPage() {
 
             <Field
               label="닉네임"
+              name="nickname"
+              required
               type="text"
               value={nickname}
               onChange={(value) => {
@@ -183,7 +191,27 @@ export default function SignupPage() {
             />
 
             <Field
+              label="전화번호"
+              name="phone"
+              required
+              type="text"
+              inputMode="tel"
+              value={phone}
+              onChange={(value) => {
+                // 치는 동안 하이픈을 붙입니다. 다 치고 나서야 형태가 잡히면 오타를 못 잡습니다.
+                setPhone(formatPhoneInput(value));
+                clearError('phone');
+              }}
+              onBlur={() => setErrors((prev) => ({ ...prev, phone: validatePhone(phone) }))}
+              error={errors.phone}
+              autoComplete="tel"
+              placeholder="010-1234-5678"
+            />
+
+            <Field
               label="이메일"
+              name="email"
+              required
               type="email"
               value={email}
               onChange={(value) => {
@@ -198,6 +226,8 @@ export default function SignupPage() {
 
             <Field
               label="비밀번호"
+              name="password"
+              required
               type="password"
               value={password}
               onChange={(value) => {
@@ -218,6 +248,8 @@ export default function SignupPage() {
 
             <Field
               label="비밀번호 확인"
+              name="passwordConfirm"
+              required
               type="password"
               value={passwordConfirm}
               onChange={(value) => {

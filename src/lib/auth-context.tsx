@@ -17,7 +17,14 @@ import { supabase } from './supabase';
 import { toAuthFailure } from './auth-errors';
 import type { AppUser, UserRole } from '@/types';
 
-type SignUpArgs = { email: string; password: string; nickname: string; role: UserRole };
+type SignUpArgs = {
+  email: string;
+  password: string;
+  nickname: string;
+  role: UserRole;
+  /** 숫자 11자리. DB trigger 가 이 값으로 user_contacts 행을 만듭니다 */
+  phone: string;
+};
 type SignInArgs = { email: string; password: string };
 
 type AuthValue = {
@@ -45,7 +52,11 @@ function toAppUser(user: User | null | undefined): AppUser | null {
   const metadataRole = user.user_metadata?.role;
   const role: UserRole = metadataRole === 'employer' ? 'employer' : 'seeker';
 
-  return { id: user.id, email, nickname, role };
+  // Phase 11 이전 계정에는 전화번호가 없습니다. 화면은 null 을 다룰 수 있어야 합니다.
+  const metadataPhone = user.user_metadata?.phone;
+  const phone = typeof metadataPhone === 'string' && metadataPhone ? metadataPhone : null;
+
+  return { id: user.id, email, nickname, role, phone };
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -87,13 +98,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isLoading,
 
-      async signUp({ email, password, nickname, role }) {
+      async signUp({ email, password, nickname, role, phone }) {
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           // 닉네임과 역할은 auth.users.user_metadata 에 넣습니다.
           // 별도 profiles 테이블을 만들지 않고, role 은 JWT 에 실려 RLS 에서 바로 쓸 수 있습니다.
-          options: { data: { nickname: nickname.trim(), role } },
+          /*
+           * phone 은 DB trigger(handle_new_user_contact)가 읽어 user_contacts 행을
+           * 만듭니다. 가입 후 따로 insert 하지 않는 이유는, 그 사이에 실패하면
+           * 연락처 없는 계정이 남기 때문입니다. 형식이 틀리면 가입 자체가 실패합니다.
+           */
+          options: { data: { nickname: nickname.trim(), role, phone } },
         });
         if (error) throw toAuthFailure(error);
         // Confirm email 이 꺼져 있으면 여기서 이미 세션이 생기고
