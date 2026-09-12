@@ -9,7 +9,7 @@
 ## 60초 셋업
 
 ```bash
-git clone https://github.com/stueonho-beep/KU_Alba_Swipe.git
+git clone https://github.com/stu-eonho/KU_Alba_Swipe.git
 cd KU_Alba_Swipe
 npm install
 cp .env.local.example .env.local   # 값은 팀 채널에서 복사
