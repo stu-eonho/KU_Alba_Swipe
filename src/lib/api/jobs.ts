@@ -49,12 +49,6 @@ export function toJob(row: JobRow): Job {
     summary: row.summary,
     description: row.description,
     address: row.address,
-    /*
-     * types.ts 가 region 을 필수로 선언했지만 DB 에는 아직 컬럼이 없다
-     * (alter table jobs add column region 미실행). A 의 타입 주석대로
-     * 주소 첫 조각으로 채운다 — 컬럼이 생기면 row.region 이 우선한다.
-     */
-    region: (row as JobRow & { region?: string | null }).region || row.address.split(' ')[0] || '',
     workDays: row.work_days,
     workHours: row.work_hours,
     benefits: row.benefits ?? [],

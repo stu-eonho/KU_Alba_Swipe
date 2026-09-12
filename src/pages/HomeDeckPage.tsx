@@ -25,6 +25,7 @@ import {
   type TutorialActiveDetail,
 } from '@/features/onboarding';
 import { useDeck } from '@/hooks/useDeck';
+import { useMyApplications } from '@/hooks/useApply';
 import type { Job, SwipeDirection } from '@/types';
 
 export default function HomeDeckPage() {
@@ -33,15 +34,9 @@ export default function HomeDeckPage() {
    * useDeck이 같은 ['jobs'] 캐시를 로컬에서 다시 거르므로 네트워크 왕복이 없다.
    */
   const [includeIncompatible, setIncludeIncompatible] = useState(false);
-  const { jobs, isLoading, isError, retry, swipe, swipeError, hiddenCount, hasAvailability } =
-    useDeck(includeIncompatible);
-  const toast = useToast();
-  const navigate = useNavigate();
 
   /**
-   * 지역 필터. useDeck 은 건드리지 않고 화면단에서 거른다 —
-   * 공고가 60건 규모라 한 번 더 훑는 비용이 네트워크 왕복보다 싸고,
-   * useDeck 은 개발자 A 소유라 시그니처를 늘릴 수 없다.
+   * 지역 필터.
    *
    * 초기값을 lazy initializer 로 읽는 이유: localStorage 접근은 렌더마다 할 일이 아니고,
    * 시크릿 모드에서는 throw 할 수 있어서 regionStorage 안에서만 다루게 가둔다.
@@ -49,24 +44,58 @@ export default function HomeDeckPage() {
   const [regions, setRegionState] = useState<string[]>(() => getRegions());
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  /*
+   * 지역을 화면단에서 한 번 더 거르지 않고 useDeck 에 넘긴다. A 가 Phase 7 에서
+   * useDeck 을 { includeIncompatible, regions } 로 확장했고, 그쪽이 지역 → 시간 →
+   * 취향 순으로 처리한다. 화면에서 또 거르면 추천 정렬이 이미 끝난 배열을 뒤늦게
+   * 잘라 내 순서가 어긋난다.
+   */
+  const {
+    jobs,
+    isLoading,
+    isError,
+    retry,
+    swipe,
+    swipeError,
+    hiddenCount,
+    hasAvailability,
+    regionCount,
+  } = useDeck({ includeIncompatible, regions });
+  const { applications } = useMyApplications();
+  const toast = useToast();
+  const navigate = useNavigate();
+
   const applyRegions = useCallback((next: string[]) => {
     setRegionState(next);
     setRegions(next);
     setSheetOpen(false);
   }, []);
 
-  // 빈 배열 = 전국 = 필터 없음. 이때는 원본 배열을 그대로 넘겨 참조를 유지한다.
+  /*
+   * 이미 지원한 공고는 덱에서 뺀다.
+   *
+   * 스와이프한 공고는 A 가 서버에서 빼 주지만, 지원은 스와이프를 거치지 않을 수 있다 —
+   * 홈에서 카드를 탭해 상세로 들어가 바로 지원하면 그 공고는 스와이프 기록이 없어서
+   * 계속 덱에 남는다. 이미 지원한 가게가 다시 나오는 게 사용자가 본 증상이다.
+   */
+  const appliedIds = useMemo(
+    () => new Set(applications.map((application) => application.job.id)),
+    [applications],
+  );
   const visibleJobs = useMemo(
-    () => (regions.length === 0 ? jobs : jobs.filter((job) => regions.includes(job.region))),
-    [jobs, regions],
+    () => (appliedIds.size === 0 ? jobs : jobs.filter((job) => !appliedIds.has(job.id))),
+    [jobs, appliedIds],
   );
 
   /**
    * "지역 때문에 0건"과 "덱을 다 봤다"를 구분한다.
-   * 구분하지 않으면 서울 외 지역을 골랐을 때 "오늘 볼 공고를 다 봤어요!"가 떠서
-   * 필터가 고장 난 것처럼 보인다 (지금 시드 데이터가 전부 서울이라 실제로 자주 생긴다).
+   * 구분하지 않으면 공고가 없는 지역을 골랐을 때 "오늘 볼 공고를 다 봤어요!"가 떠서
+   * 필터가 고장 난 것처럼 보인다.
+   *
+   * regionCount 는 시간·취향을 거르기 전, 그 지역에 있는 공고 수다. 이게 0 이면
+   * 원인이 확실히 지역이다. 시간 때문에 0 건인 경우는 hiddenCount 안내 줄이 따로 설명한다.
    */
-  const filteredToEmpty = visibleJobs.length === 0 && jobs.length > 0 && regions.length > 0;
+  const filteredToEmpty = visibleJobs.length === 0 && regions.length > 0 && regionCount === 0;
 
   /**
    * 카드를 탭하면 확대 오버레이가 아니라 `/jobs/:jobId` 전체 화면으로 **이동**한다 (PHASE7 F3).

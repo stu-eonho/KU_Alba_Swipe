@@ -70,6 +70,11 @@ function MainLayout() {
     return (
       <AppShell title={title} role="employer" topBarRight={<NotificationBell />}>
         <Outlet />
+        {/*
+          구인자 튜토리얼(F9). 역할은 Tutorial 이 useAuth()로 직접 읽으므로 prop 이 필요 없다.
+          이 줄이 없으면 구인자에게는 튜토리얼이 아예 마운트되지 않는다.
+        */}
+        <Tutorial key={user.id} userId={user.id} />
       </AppShell>
     );
   }

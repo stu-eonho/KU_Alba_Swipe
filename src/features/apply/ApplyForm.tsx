@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { CheckCircle2, WifiOff } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { BookmarkPlus, CheckCircle2, WifiOff, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Textarea, useToast } from '@/components/ui';
 import { JobThumb, formatWage } from '@/features/wishlist';
 import { useApply } from '@/hooks/useApply';
+import { useApplyTemplates } from '@/hooks/useApplyTemplates';
 import type { Job, MyApplication } from '@/types';
 
 const MAX_MESSAGE_LEN = 300;
@@ -63,6 +64,10 @@ export function ApplyForm({ job }: ApplyFormProps) {
   }
 
   if (existingApplication || submitted) {
+    /*
+     * 완료 화면에는 Textarea 가 없다. 템플릿 UI 는 ApplyMessageField 안에만 살아 있으므로
+     * 이 분기에서는 템플릿 훅조차 돌지 않는다 — 테이블이 없어도 완료 화면은 멀쩡하다.
+     */
     return (
       <ApplyComplete
         application={existingApplication}
@@ -96,20 +101,7 @@ export function ApplyForm({ job }: ApplyFormProps) {
       </section>
 
       <div className="flex-1 px-4">
-        <Textarea
-          label="구인자님께 한마디"
-          value={message}
-          onChange={(event) => setMessage(event.target.value.slice(0, MAX_MESSAGE_LEN))}
-          maxLength={MAX_MESSAGE_LEN}
-          placeholder="간단한 자기소개나 지원 동기를 적어주세요"
-        />
-        <div className="mt-1.5 flex items-start justify-between gap-3">
-          <p className="text-[12px] leading-[1.4] text-faint">닉네임과 함께 전달됩니다</p>
-          <p className="tabular shrink-0 text-[12px] leading-[1.4] text-faint">
-            <span className="sr-only">입력한 글자 수 </span>
-            {message.length} / {MAX_MESSAGE_LEN}
-          </p>
-        </div>
+        <ApplyMessageField value={message} onChange={setMessage} />
       </div>
 
       <div
@@ -121,6 +113,151 @@ export function ApplyForm({ job }: ApplyFormProps) {
         </Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * 지원 문구 입력부 — 템플릿 칩 행 · Textarea · 글자 수 · "템플릿으로 저장" 을 한 덩어리로 묶는다.
+ *
+ * 한 컴포넌트로 묶은 이유: 템플릿 훅을 한 번만 부르기 위해서다. 칩 행과 저장 버튼이
+ * Textarea 위아래로 갈라져 있어 각자 훅을 부르면 isSaving 같은 뮤테이션 상태가
+ * 두 벌이 되어 어긋난다.
+ *
+ * 템플릿은 부가 기능이다. 조회가 실패하면(예: apply_templates 테이블이 아직 없을 때)
+ * 칩 행만 조용히 사라지고 지원 자체는 그대로 굴러가야 한다. 에러 화면을 띄우지 않는다.
+ */
+function ApplyMessageField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const toast = useToast();
+  const { templates, isLoading, isError, save, remove, isSaving } = useApplyTemplates();
+  /*
+   * 공유 Textarea 프리미티브는 ref 를 받지 않고, 그쪽은 손대지 않는다(다른 화면이 같이 쓴다).
+   * 래퍼 div 를 통해 실제 <textarea> 노드를 집어 커서 위치를 읽는다.
+   */
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const nodeOf = () => fieldRef.current?.querySelector('textarea') ?? null;
+
+  const insertTemplate = (body: string) => {
+    const node = nodeOf();
+    /*
+     * 포커스가 없는 textarea 의 selectionStart 는 0 이다. 그대로 믿으면 칩을 눌렀을 때
+     * 쓰던 글 맨 앞에 끼워진다 — 의도한 자리가 아니다. 커서를 못 잡았으면 글 끝에 붙인다.
+     */
+    const focused = node !== null && document.activeElement === node;
+    const start = focused ? node.selectionStart : value.length;
+    const end = focused ? node.selectionEnd : value.length;
+
+    // 선택 구간은 어차피 대체되므로 그만큼이 남은 자리로 되돌아온다.
+    const room = MAX_MESSAGE_LEN - (value.length - (end - start));
+    if (room <= 0) {
+      toast.error(`${MAX_MESSAGE_LEN}자를 다 채워서 더 넣을 수 없어요`);
+      return;
+    }
+
+    // 넘치는 부분은 자른다. 넘긴 채로 두면 제출 검증에 걸린다.
+    const piece = body.slice(0, room);
+    onChange(value.slice(0, start) + piece + value.slice(end));
+    if (piece.length < body.length) {
+      toast.error(`${MAX_MESSAGE_LEN}자가 넘어 뒷부분은 잘라서 넣었어요`);
+    }
+
+    /*
+     * 커서 이동은 상태가 반영된 다음이어야 한다. 지금 옮기면 리렌더가 덮어쓴다.
+     * 삽입한 글 끝으로 보내고 포커스를 돌려줘야 이어서 쓸 수 있다.
+     */
+    const caret = start + piece.length;
+    requestAnimationFrame(() => {
+      const next = nodeOf();
+      if (!next) return;
+      next.focus();
+      next.setSelectionRange(caret, caret);
+    });
+  };
+
+  const handleRemove = (id: string) => {
+    // 확인 다이얼로그 없이 바로 지운다 — 훅이 낙관적으로 목록에서 빼준다.
+    remove(id);
+    toast.success('템플릿을 지웠어요');
+  };
+
+  const handleSave = async () => {
+    try {
+      // 제목은 비워 보낸다 — 본문 앞 20자가 제목이 된다(lib/api/templates.ts).
+      await save('', value);
+      toast.success('템플릿으로 저장했어요');
+    } catch {
+      toast.error('템플릿을 저장하지 못했어요');
+    }
+  };
+
+  // 로딩 중이거나 조회가 깨졌으면(테이블 없음 포함) 빈 줄이 남지 않게 행 자체를 그리지 않는다.
+  const showChips = !isLoading && !isError && templates.length > 0;
+
+  return (
+    <>
+      {showChips && (
+        <div
+          role="group"
+          aria-label="저장한 지원서 템플릿"
+          className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {templates.map((template) => (
+            <span
+              key={template.id}
+              className="flex h-11 shrink-0 items-center rounded-full border border-line bg-surface"
+            >
+              <button
+                type="button"
+                onClick={() => insertTemplate(template.body)}
+                className="max-w-[160px] truncate py-2 pl-3.5 pr-1 text-[13px] font-medium leading-[1.3] text-ink transition-transform duration-100 ease-out active:scale-[0.97]"
+              >
+                {template.title}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRemove(template.id)}
+                aria-label={`${template.title} 템플릿 지우기`}
+                className="flex h-11 w-9 items-center justify-center rounded-r-full text-faint transition-transform duration-100 ease-out active:scale-[0.9]"
+              >
+                <X size={15} aria-hidden />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div ref={fieldRef}>
+        <Textarea
+          label="구인자님께 한마디"
+          value={value}
+          onChange={(event) => onChange(event.target.value.slice(0, MAX_MESSAGE_LEN))}
+          maxLength={MAX_MESSAGE_LEN}
+          placeholder="간단한 자기소개나 지원 동기를 적어주세요"
+        />
+      </div>
+      <div className="mt-1.5 flex items-start justify-between gap-3">
+        <p className="text-[12px] leading-[1.4] text-faint">닉네임과 함께 전달됩니다</p>
+        <p className="tabular shrink-0 text-[12px] leading-[1.4] text-faint">
+          <span className="sr-only">입력한 글자 수 </span>
+          {value.length} / {MAX_MESSAGE_LEN}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void handleSave()}
+        disabled={value.trim().length === 0 || isSaving}
+        className="-ml-1 mt-1 inline-flex h-11 items-center gap-1.5 px-1 text-[13px] font-semibold leading-[1.4] text-muted transition-transform duration-100 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:text-faint"
+      >
+        <BookmarkPlus size={15} aria-hidden />
+        현재 내용을 템플릿으로 저장
+      </button>
+    </>
   );
 }
 

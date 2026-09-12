@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import { JOB_CATEGORIES } from '@/lib/api/jobs';
 import { toHHMM } from '@/lib/availability';
 import { useCreateJob } from '@/hooks/useEmployerJobs';
+import { JobImageField } from '@/features/employer-ui';
 import { Field, FormBanner, SubmitButton, TextareaField } from '@/features/auth/form-primitives';
 import { PERSONALITY_TRAITS, WEEKDAYS, type PersonalityTrait, type Weekday } from '@/types';
 
@@ -54,6 +55,8 @@ export default function EmployerJobFormPage() {
   const [endMin, setEndMin] = useState(18 * 60);
   const [benefits, setBenefits] = useState<string[]>([]);
   const [wantedTraits, setWantedTraits] = useState<PersonalityTrait[]>([]);
+  // 공고 사진(F6). 선택 항목이라 안 올려도 저장된다 — 화면은 업종 기본 사진으로 채운다.
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const [errors, setErrors] = useState<Errors>({});
   const [banner, setBanner] = useState<string | null>(null);
@@ -101,7 +104,7 @@ export default function EmployerJobFormPage() {
         workHours: `${formatClock(startMin)} ~ ${formatClock(endMin)}`,
         benefits,
         wantedTraits,
-        imageUrl: null,
+        imageUrl,
       });
       navigate('/employer/jobs', { replace: true });
     } catch (error) {
@@ -310,6 +313,8 @@ export default function EmployerJobFormPage() {
             })}
           </div>
         </div>
+
+        <JobImageField value={imageUrl} onChange={setImageUrl} />
 
         <TextareaField
           label="상세 내용"
