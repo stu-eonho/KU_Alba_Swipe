@@ -15,21 +15,11 @@ import { AvailabilityGrid } from './AvailabilityGrid';
 import {
   COL_COUNT,
   availabilityToCells,
-  cellKey,
-  cellsToAvailability,
   cellsToHours,
-  colOfKey,
-  hourToRow,
+  cellsToSegments,
+  columnKeys,
   type CellKey,
 } from './gridModel';
-
-type Preset = { id: string; label: string; startHour: number; endHour: number };
-
-const PRESETS: Preset[] = [
-  { id: 'morning', label: '오전 09-13', startHour: 9, endHour: 13 },
-  { id: 'afternoon', label: '오후 13-18', startHour: 13, endHour: 18 },
-  { id: 'evening', label: '저녁 18-23', startHour: 18, endHour: 23 },
-];
 
 export function AvailabilityPage() {
   const navigate = useNavigate();
@@ -46,34 +36,12 @@ export function AvailabilityPage() {
     setSelected(availabilityToCells(availability));
   }, [availability, isLoading]);
 
-  /**
-   * 프리셋이 적용될 요일. 이미 칠한 요일이 있으면 그 요일들에만,
-   * 하나도 없으면 7일 전체에 적용한다.
-   */
-  const applyPreset = useCallback((preset: Preset) => {
-    setSelected((current) => {
-      const touched = new Set<number>();
-      current.forEach((key) => touched.add(colOfKey(key)));
-
-      const cols =
-        touched.size > 0
-          ? [...touched]
-          : Array.from({ length: COL_COUNT }, (_, index) => index);
-
-      const startRow = hourToRow(preset.startHour);
-      const endRow = hourToRow(preset.endHour);
-
-      const keys: CellKey[] = [];
-      for (const col of cols) {
-        for (let row = startRow; row < endRow; row += 1) keys.push(cellKey(col, row));
-      }
-
-      // 이미 전부 켜져 있으면 끈다 — 같은 칩을 다시 눌러 되돌릴 수 있다
-      const allOn = keys.every((key) => current.has(key));
-      const next = new Set(current);
-      for (const key of keys) {
-        if (allOn) next.delete(key);
-        else next.add(key);
+  /** 7일 09~23시를 전부 켠다. 이미 전부 켜져 있으면 아무것도 하지 않는다. */
+  const selectAll = useCallback(() => {
+    setSelected(() => {
+      const next = new Set<CellKey>();
+      for (let col = 0; col < COL_COUNT; col += 1) {
+        for (const key of columnKeys(col)) next.add(key);
       }
       return next;
     });
@@ -81,7 +49,9 @@ export function AvailabilityPage() {
 
   const clearAll = useCallback(() => setSelected(new Set()), []);
 
-  const { list, mergedDays } = useMemo(() => cellsToAvailability(selected), [selected]);
+  // 떨어진 구간을 그대로 보낸다. 감싸지 않는다 — schema_phase5_availability.sql 로
+  // 기본키에 start_min 이 들어가 같은 요일 여러 줄이 저장된다.
+  const list = useMemo(() => cellsToSegments(selected), [selected]);
   const hours = cellsToHours(selected);
 
   async function handleSave() {
@@ -100,18 +70,15 @@ export function AvailabilityPage() {
         가능한 시간을 칠해주세요. 겹치는 공고만 보여드려요.
       </p>
 
-      {/* 프리셋 — 드래그가 어려운 사람도, 키보드 사용자도 여기로 등록할 수 있다 */}
+      {/* 전체 선택 / 전체 해제 — 드래그가 어려운 사람과 키보드 사용자의 진입점 */}
       <div className="mt-3 flex flex-wrap gap-2">
-        {PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            onClick={() => applyPreset(preset)}
-            className="h-11 rounded-pill border border-line bg-surface px-3.5 text-[13px] font-medium text-body transition-transform duration-100 ease-out active:scale-[0.97] active:border-brand active:text-brand"
-          >
-            {preset.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={selectAll}
+          className="h-11 rounded-pill border border-line bg-surface px-3.5 text-[13px] font-medium text-body transition-transform duration-100 ease-out active:scale-[0.97] active:border-brand active:text-brand"
+        >
+          전체 선택
+        </button>
         <button
           type="button"
           onClick={clearAll}
@@ -129,13 +96,6 @@ export function AvailabilityPage() {
         <GridSkeleton />
       ) : (
         <AvailabilityGrid className="mt-2" selected={selected} onChange={setSelected} />
-      )}
-
-      {mergedDays.length > 0 && (
-        <p className="mt-3 text-[12px] leading-[1.5] text-muted">
-          {mergedDays.join('·')}요일은 요일당 한 구간만 저장돼요. 중간에 비워 둔 시간도 포함해
-          저장됩니다.
-        </p>
       )}
 
       <p className="mt-3 text-[12px] leading-[1.5] text-faint">
