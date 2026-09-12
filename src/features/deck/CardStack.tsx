@@ -22,7 +22,7 @@ import type { Job, SwipeDirection } from '@/types';
 import { jobImageUrl } from './categoryVisual';
 import { SwipeCard } from './SwipeCard';
 import { SwipeControls } from './SwipeControls';
-import { FLY_MS, REDUCED_FADE_MS, STACK_DEPTH, swipeHaptic } from './useSwipeGesture';
+import { FLY_MAX_MS, REDUCED_FADE_MS, STACK_DEPTH, swipeHaptic } from './useSwipeGesture';
 
 /** 날아가기가 끝난 뒤 DOM에서 내리기까지의 여유. 애니메이션 끝과 겹치면 깜빡인다. */
 const UNMOUNT_GRACE_MS = 60;
@@ -45,12 +45,7 @@ export type CardStackProps = {
   className?: string;
 };
 
-export function CardStack({
-  jobs,
-  onSwipe,
-  onCardTap,
-  className,
-}: CardStackProps) {
+export function CardStack({ jobs, onSwipe, onCardTap, className }: CardStackProps) {
   const [exiting, setExiting] = useState<ExitingCard[]>([]);
   /** aria-live는 같은 문자열이 연속되면 다시 읽지 않는다. seq로 텍스트를 미세하게 바꾼다 */
   const [announcement, setAnnouncement] = useState<{ text: string; seq: number } | null>(null);
@@ -99,7 +94,11 @@ export function CardStack({
 
       onSwipe?.(job, direction);
 
-      const flyMs = prefersReduced ? REDUCED_FADE_MS : FLY_MS;
+      /*
+       * 버튼 경로가 드래그보다 오래 난다. 짧은 쪽(FLY_MS)으로 타이머를 잡으면
+       * 카드가 날아가는 도중에 언마운트돼 화면 가운데서 사라진다.
+       */
+      const flyMs = prefersReduced ? REDUCED_FADE_MS : FLY_MAX_MS;
       const timer = window.setTimeout(() => {
         setExiting((prev) => prev.filter((entry) => entry.job.id !== job.id));
       }, flyMs + UNMOUNT_GRACE_MS);
