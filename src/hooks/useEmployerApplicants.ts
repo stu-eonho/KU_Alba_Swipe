@@ -24,7 +24,7 @@ export function useEmployerApplicants(jobId?: string) {
   const query = useQuery({
     queryKey,
     queryFn: () => fetchEmployerApplicants(jobId),
-    // 사업자 계정에서만 의미가 있습니다. 구직자로 부르면 RLS 가 빈 배열을 돌려줍니다.
+    // 구인자 계정에서만 의미가 있습니다. 구직자로 부르면 RLS 가 빈 배열을 돌려줍니다.
     enabled: Boolean(user) && user?.role === 'employer',
   });
 

@@ -1,7 +1,7 @@
 /**
  * OWNER: 개발자 A (데이터/인증)
  *
- * 지원서. 구직자가 쓰고, 사업자가 읽고 상태를 바꿉니다.
+ * 지원서. 구직자가 쓰고, 구인자가 읽고 상태를 바꿉니다.
  * 누가 무엇을 볼 수 있는지는 전부 RLS 가 정합니다 (schema_phase2.sql 4번 블록).
  */
 import { supabase } from '@/lib/supabase';
@@ -107,7 +107,7 @@ export async function fetchMyApplication(applicationId: string): Promise<MyAppli
 }
 
 /**
- * 내 공고에 들어온 지원서 (사업자).
+ * 내 공고에 들어온 지원서 (구인자).
  *
  * 쿼리를 두 번 나눕니다. applications 와 seeker_profiles 사이에는 직접 FK 가 없어서
  * (둘 다 auth.users 를 가리킬 뿐) PostgREST 가 중첩 select 로 붙여 주지 못합니다.
@@ -149,7 +149,7 @@ export async function fetchEmployerApplicants(jobId?: string): Promise<Applicant
   });
 }
 
-/** 지원서 상태 변경 (사업자). RLS 가 내 공고의 지원서로 범위를 좁힙니다. */
+/** 지원서 상태 변경 (구인자). RLS 가 내 공고의 지원서로 범위를 좁힙니다. */
 export async function setApplicationStatus(
   applicationId: string,
   status: ApplicationStatus,
