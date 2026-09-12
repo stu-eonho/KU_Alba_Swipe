@@ -106,7 +106,7 @@ npm run dev
 
 ## 충돌이 나지 않게 하는 5가지 규칙
 
-1. **브랜치를 만들지 않습니다.** `main`에 직접 푸시하되, 푸시 전 반드시 `git pull --rebase`. 2명 · 7시간에 PR 흐름은 순손해입니다.
+1. **브랜치를 나눠서 작업합니다.** `main`에 직접 푸시하지 않습니다. 규칙은 아래 "브랜치 전략" 참조.
 2. **1시간에 한 번은 무조건 푸시합니다.** 4시간치를 한 번에 올리면 충돌이 아니라 재앙이 됩니다.
 3. **`src/types.ts`는 단독 커밋으로만.** 다른 파일 변경을 섞지 말고, 커밋 메시지에 `contract:` 접두사를 붙이고, 푸시 직후 팀 채널에 알립니다. 상대는 즉시 `git pull`.
    필드 **추가는 자유**, 삭제·이름 변경은 구두 합의 후. 7시간 프로젝트에서는 지우는 것보다 optional로 남기는 게 거의 항상 옳습니다.
@@ -115,6 +115,54 @@ npm run dev
 5. **Prettier 설정은 루트 하나뿐.** 개인 에디터 설정으로 덮어쓰지 마세요. 이것 때문에 diff가 폭발하면 충돌 해결이 불가능해집니다.
 
 가장 자주 터지는 파일: `router.tsx`(B 단독) · `globals.css`(B 단독) · `package.json`(공지 필수) · `schema.sql`(A 단독)
+
+---
+
+## 브랜치 전략
+
+```
+main  ← 항상 빌드되는 상태. 데모는 여기서 배포한다. 직접 푸시 금지.
+ ├── a/<모듈>   개발자 A 작업     예) a/auth, a/hooks, a/settings
+ └── b/<모듈>   개발자 B 작업     예) b/ui-foundation, b/swipe-deck, b/wishlist
+```
+
+**브랜치 접두사가 곧 소유자다.** `a/`로 시작하면 A의 것, `b/`면 B의 것. 남의 접두사 브랜치에 푸시하지 않습니다.
+
+### 작업 흐름
+
+```bash
+# 1. 시작할 때 — 항상 최신 main에서 자른다
+git checkout main && git pull
+git checkout -b b/swipe-deck
+
+# 2. 작업 중 — 자주 커밋하고 자기 브랜치에 푸시
+git add -A && git commit -m "feat: 스와이프 제스처"
+git push -u origin b/swipe-deck
+
+# 3. 끝났을 때 — main을 먼저 당겨 충돌을 내 브랜치에서 해결한다
+git fetch origin
+git rebase origin/main        # 충돌 나면 여기서 해결
+npm run build                 # 통과해야 머지 자격이 생긴다
+git checkout main && git pull
+git merge b/swipe-deck && git push
+```
+
+### 규칙
+
+1. **머지 조건은 `npm run build` 통과 하나다.** 깨진 코드를 main에 넣으면 상대방이 그 위에서 작업하다 같이 막힌다.
+2. **충돌은 자기 브랜치에서 해결한다.** main으로 가져가서 해결하지 않습니다. `git rebase origin/main`을 자기 브랜치에서 먼저 돌립니다.
+3. **모듈 하나 끝나면 바로 머지한다.** 브랜치를 오래 들고 있을수록 충돌이 커집니다. 하루 종일 살아있는 브랜치를 만들지 않습니다.
+4. **최소 1시간에 한 번은 자기 브랜치에 푸시한다.** 로컬에만 있으면 사고 시 통째로 날아갑니다.
+5. **PR은 만들지 않습니다.** 셀프 머지로 갑니다. 리뷰할 시간이 없고, 소유권이 갈려 있어 서로의 코드를 볼 일이 적습니다.
+6. `package-lock.json` 충돌 시 수동 병합 금지 → `git checkout --theirs package-lock.json && npm install`
+
+### 지금 살아있는 브랜치
+
+| 브랜치 | 소유 | 상태 |
+|---|---|---|
+| `main` | 공용 | 안정. 빌드 통과 |
+| `b/ui-foundation` | B | UI 프리미티브 8종 + 레이아웃 + 라우터 작업 중 |
+| `develop` | nous | main보다 뒤처져 있음 — **main을 머지해서 따라잡아야 합니다** |
 
 ---
 
