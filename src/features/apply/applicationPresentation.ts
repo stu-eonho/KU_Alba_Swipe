@@ -2,7 +2,7 @@ import type { ApplicationStatus } from '@/types';
 
 export const MY_APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {
   applied: '지원 완료',
-  viewed: '사장님 열람',
+  viewed: '구인자 열람',
   accepted: '채용 확정',
   rejected: '지원 종료',
 };

@@ -129,3 +129,18 @@ alter table jobs add column if not exists wanted_traits text[] default '{}';
 - **B 소유 경로 금지**: `src/components/` · `src/styles/` · `router.tsx` · `src/features/{deck,wishlist,apply,onboarding,availability,employer-deck,employer-ui,notifications,profile}/` · `src/pages/{HomeDeck,Wishlist,Apply,EmployerHeld,EmployerApplicants,Settings}Page.tsx`
 - `src/types.ts`는 공동 — 단독 커밋 + 공지
 - hex 리터럴 금지(토큰만) · 타이포 최대 18px/600 · 그림자 금지 · 입력 폰트 16px 이상
+
+---
+
+## A-6 · "사업자" → "구인자" 잔여분 (5분) — B가 B 소유분은 끝냈습니다
+
+B 소유 파일은 전부 바꿨습니다. **A 소유 파일에 남은 것만** 처리해 주세요.
+
+**화면에 보이는 문구 (반드시)**
+- `src/pages/SignupPage.tsx:257` — `description="...지원한 공고의 **사업자**에게 보여주는 데..."`
+- `src/pages/SignupPage.tsx:290` — `"지원할 때 **사업자**에게 함께 전달됩니다..."`
+
+**주석 (여유 있으면)**
+`src/lib/api/applications.ts` · `src/lib/api/profiles.ts` · `src/hooks/useEmployerApplicants.ts` · `src/hooks/useSeekerProfile.ts` · `src/types.ts` · `src/pages/SignupPage.tsx` 상단 주석
+
+⚠️ **식별자는 절대 바꾸지 마세요.** `role === 'employer'` · `employer_id` · `useEmployerApplicants` 같은 영문 이름은 그대로 둡니다. DB 컬럼과 어긋나고 B 코드가 깨집니다. **한국어 문구만** 바꿉니다.

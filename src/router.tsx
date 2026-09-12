@@ -6,7 +6,7 @@
  * ALBASWIPE_SPEC.md <route_definitions> + <component_hierarchy><app_shell>
  *   public    : /login, /signup            → PublicLayout (탑바·탭바 없음)
  *   protected : /, /wishlist, /settings    → RequireAuth + MainLayout (탑바 + 탭바)
- *   protected : /employer/held             → 사업자 보류 지원자 (PHASE4 B-2)
+ *   protected : /employer/held             → 구인자 보류 지원자 (PHASE4 B-2)
  *   protected : /apply/:jobId              → RequireAuth + FullscreenLayout (탭바 없음, 뒤로가기만)
  *   * → / 로 리다이렉트 (404 전용 화면을 만들지 않는다)
  *

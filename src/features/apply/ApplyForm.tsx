@@ -91,7 +91,7 @@ export function ApplyForm({ job }: ApplyFormProps) {
 
       <div className="flex-1 px-4">
         <Textarea
-          label="사장님께 한마디"
+          label="구인자님께 한마디"
           value={message}
           onChange={(event) => setMessage(event.target.value.slice(0, MAX_MESSAGE_LEN))}
           maxLength={MAX_MESSAGE_LEN}
