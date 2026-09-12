@@ -12,7 +12,7 @@
  * [1]과 [2]를 합치면 상세 카드가 닫힐 때(= 이 카드로 되돌아오는 layout 애니메이션)
  * projection이 scale/translateY를 덮어써 카드가 튄다.
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import { motion, useReducedMotion } from 'motion/react';
 import { Chip } from '@/components/ui';
@@ -26,8 +26,18 @@ import {
   PROMOTE_DELAY_MS,
   PROMOTE_MS,
   ROTATE_ORIGIN,
+  TAP_MAX_DISTANCE_PX,
+  TAP_MAX_MS,
   useSwipeGesture,
 } from './useSwipeGesture';
+
+type TapTrace = {
+  pointerId: number;
+  lastX: number;
+  lastY: number;
+  distance: number;
+  startedAt: number;
+};
 
 /** 이미지 하단 그라디언트 — SPEC `linear-gradient(to top, rgba(17,24,39,0.75), transparent)`.
  *  hex/rgba 리터럴 대신 --color-ink 토큰을 75%로 섞어 같은 값을 만든다. */
@@ -64,12 +74,45 @@ export function SwipeCard({
   const isTop = depth === 0;
   const isExiting = depth < 0;
   const prefersReduced = useReducedMotion();
+  const tapTraceRef = useRef<TapTrace | null>(null);
 
   const { x, opacity, rotate, likeOpacity, nopeOpacity, bind, flyOut } = useSwipeGesture({
     enabled: isTop,
     onCommit: (direction) => onCommit?.(direction),
-    onTap: () => onTap?.(),
   });
+
+  /*
+   * 상세 열기는 pointer capture 단계에서 판정한다. use-gesture는 swipe 이동과 속도를
+   * 계속 담당하지만, 일부 모바일 조합에서 state.tap이 전달되지 않아 카드 탭이 조용히
+   * 사라지는 경우까지 이 경로가 막아 준다. 현재 위치가 아니라 이동한 각 구간의 길이를
+   * 누적하므로 20px 갔다 제자리로 돌아온 동작도 탭으로 오인하지 않는다.
+   */
+  const handlePointerDownCapture = (event: React.PointerEvent) => {
+    if (!isTop || !event.isPrimary) return;
+    tapTraceRef.current = {
+      pointerId: event.pointerId,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      distance: 0,
+      startedAt: performance.now(),
+    };
+  };
+
+  const handlePointerMoveCapture = (event: React.PointerEvent) => {
+    const trace = tapTraceRef.current;
+    if (!trace || trace.pointerId !== event.pointerId) return;
+    trace.distance += Math.hypot(event.clientX - trace.lastX, event.clientY - trace.lastY);
+    trace.lastX = event.clientX;
+    trace.lastY = event.clientY;
+  };
+
+  const handlePointerUpCapture = (event: React.PointerEvent) => {
+    const trace = tapTraceRef.current;
+    tapTraceRef.current = null;
+    if (!trace || trace.pointerId !== event.pointerId) return;
+    const elapsed = performance.now() - trace.startedAt;
+    if (trace.distance <= TAP_MAX_DISTANCE_PX && elapsed < TAP_MAX_MS) onTap?.();
+  };
 
   // 드래그·버튼·키보드 세 입력이 전부 이 한 경로로 들어온다.
   useEffect(() => {
@@ -109,6 +152,12 @@ export function SwipeCard({
         {/* [3] 드래그 */}
         <motion.div
           {...dragProps}
+          onPointerDownCapture={handlePointerDownCapture}
+          onPointerMoveCapture={handlePointerMoveCapture}
+          onPointerUpCapture={handlePointerUpCapture}
+          onPointerCancelCapture={() => {
+            tapTraceRef.current = null;
+          }}
           role="article"
           aria-label={`${job.storeName}, ${job.category}, 시급 ${wage}`}
           aria-hidden={!isTop}

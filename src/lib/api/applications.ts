@@ -7,6 +7,7 @@
 import { supabase } from '@/lib/supabase';
 import { toJob, type JobRow } from '@/lib/api/jobs';
 import { fetchSeekerProfiles } from '@/lib/api/profiles';
+import { AlreadyAppliedError, isUniqueViolation } from '@/lib/api/errors';
 import type { ApplicantEntry, ApplicationStatus, MyApplication } from '@/types';
 
 type ApplicationRow = {
@@ -27,15 +28,22 @@ function firstJob(jobs: JobRow | JobRow[] | null): JobRow | null {
 /**
  * 지원하기.
  *
- * upsert 입니다 — 같은 공고에 다시 지원하면 메시지만 갱신됩니다.
- * insert 면 UNIQUE (user_id, job_id) 때문에 두 번째 지원이 에러가 나는데,
- * 데모에서 버튼을 눌렀을 때 에러가 뜨면 그 순간 끝납니다.
+ * insert 입니다. upsert 가 아닙니다 —
+ * upsert 면 같은 공고에 두 번째로 지원했을 때 조용히 성공하면서 첫 지원 메시지를
+ * 덮어씁니다. 사용자가 보낸 원문이 사라지는 건 되돌릴 수 없는 손실입니다.
+ *
+ * 중복 차단의 최종 근거는 화면의 버튼 상태가 아니라 UNIQUE (user_id, job_id) 입니다.
+ * 두 탭에서 동시에 눌러도 한쪽은 23505 로 떨어지고, 그걸 AlreadyAppliedError 로
+ * 바꿔 "이미 지원 완료" 상태로 수렴시킵니다.
+ *
  * user_id 는 컬럼 default 가 auth.uid() 이므로 보내지 않습니다.
  */
 export async function applyToJob(jobId: string, message: string): Promise<void> {
   const { error } = await supabase
     .from('applications')
-    .upsert({ job_id: jobId, message: message.trim() || null }, { onConflict: 'user_id,job_id' });
+    .insert({ job_id: jobId, message: message.trim() || null });
+
+  if (isUniqueViolation(error)) throw new AlreadyAppliedError();
   if (error) throw error;
 }
 
@@ -48,18 +56,54 @@ export async function fetchMyApplications(): Promise<MyApplication[]> {
   if (error) throw error;
 
   return ((data ?? []) as unknown as ApplicationRow[])
-    .map((row) => {
-      const job = firstJob(row.jobs);
-      if (!job) return null;
-      return {
-        id: row.id,
-        job: toJob(job),
-        message: row.message,
-        status: row.status,
-        createdAt: row.created_at,
-      };
-    })
+    .map(toMyApplication)
     .filter((entry): entry is MyApplication => entry !== null);
+}
+
+function toMyApplication(row: ApplicationRow): MyApplication | null {
+  const job = firstJob(row.jobs);
+  if (!job) return null;
+  return {
+    id: row.id,
+    job: toJob(job),
+    message: row.message,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+/**
+ * 이 공고에 내가 이미 지원했는지. 지원 전 화면이 CTA 를 정하는 근거입니다.
+ *
+ * 0건은 오류가 아니라 "아직 지원 안 함" 이라는 정상 상태라서 maybeSingle() 을 씁니다.
+ * single() 은 0건에서 에러를 냅니다.
+ */
+export async function fetchMyApplicationByJob(jobId: string): Promise<MyApplication | null> {
+  const { data, error } = await supabase
+    .from('applications')
+    .select('id, message, status, created_at, jobs(*)')
+    .eq('job_id', jobId)
+    .maybeSingle();
+  if (error) throw error;
+
+  return data ? toMyApplication(data as unknown as ApplicationRow) : null;
+}
+
+/**
+ * 지원서 단건 (구직자 본인). 상세 화면을 직접 새로고침해도 데이터를 가져옵니다.
+ *
+ * RLS 가 본인 행만 돌려줍니다. 남의 지원서 id 를 넣으면 없는 것과 똑같이 null 입니다 —
+ * "권한 없음" 과 "존재하지 않음" 을 구분해 주면 그 자체가 정보 노출입니다.
+ */
+export async function fetchMyApplication(applicationId: string): Promise<MyApplication | null> {
+  const { data, error } = await supabase
+    .from('applications')
+    .select('id, message, status, created_at, jobs(*)')
+    .eq('id', applicationId)
+    .maybeSingle();
+  if (error) throw error;
+
+  return data ? toMyApplication(data as unknown as ApplicationRow) : null;
 }
 
 /**

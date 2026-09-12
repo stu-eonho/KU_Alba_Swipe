@@ -15,28 +15,37 @@
 declare global {
   interface Window {
     /** 개발 빌드에서만 등록된다(Tutorial.tsx). 콘솔에서 튜토리얼을 되돌릴 때 쓴다. */
-    __albaswipeResetTutorial?: () => void;
+    __albaswipeResetTutorial?: (userId?: string) => void;
   }
 }
 
-/** 데모 리허설에서 초기화할 키. 콘솔: localStorage.removeItem('albaswipe.tutorial.seen') */
-export const TUTORIAL_SEEN_KEY = 'albaswipe.tutorial.seen';
+/**
+ * v2부터 사용자별로 저장한다. 브라우저 공용 키 하나를 쓰면 같은 기기에서 새로 가입한
+ * 계정도 이전 사용자가 튜토리얼을 봤다는 이유로 건너뛰는 버그가 생긴다.
+ */
+export const TUTORIAL_SEEN_KEY_PREFIX = 'albaswipe.tutorial.seen.v2';
 
 const SEEN_VALUE = '1';
 
-/** 이미 본 적이 있는가. 스토리지가 막혀 있으면 true(= 띄우지 않음). */
-export function hasSeenTutorial(): boolean {
+/** 이미 본 적이 있는가. 스토리지가 막혀 있으면 false로 두어 첫 안내를 잃지 않는다. */
+export function tutorialSeenKey(userId: string): string {
+  return `${TUTORIAL_SEEN_KEY_PREFIX}:${userId}`;
+}
+
+export function hasSeenTutorial(userId: string): boolean {
   try {
-    return window.localStorage.getItem(TUTORIAL_SEEN_KEY) === SEEN_VALUE;
+    return window.localStorage.getItem(tutorialSeenKey(userId)) === SEEN_VALUE;
   } catch {
-    return true;
+    // 스토리지가 막혀도 첫 사용 안내 자체를 잃지 않는다. 닫힌 상태는 컴포넌트가
+    // 현재 세션 동안 기억하므로 route 이동마다 반복해서 뜨지는 않는다.
+    return false;
   }
 }
 
 /** 봤다고 표시한다. 실패해도 조용히 넘어간다 — 튜토리얼을 닫는 동작 자체는 성공해야 한다. */
-export function markTutorialSeen(): void {
+export function markTutorialSeen(userId: string): void {
   try {
-    window.localStorage.setItem(TUTORIAL_SEEN_KEY, SEEN_VALUE);
+    window.localStorage.setItem(tutorialSeenKey(userId), SEEN_VALUE);
   } catch {
     /* 스토리지가 막힌 환경. 이번 세션에서만 닫힌다. */
   }
@@ -47,9 +56,27 @@ export function markTutorialSeen(): void {
  * 데모 리허설에서 쓰려고 export 한다. 개발 빌드에서는 콘솔의
  * `__albaswipeResetTutorial()` 로도 호출할 수 있다 (Tutorial.tsx 에서 등록).
  */
-export function resetTutorial(): void {
+export function resetTutorial(userId: string): void {
   try {
-    window.localStorage.removeItem(TUTORIAL_SEEN_KEY);
+    window.localStorage.removeItem(tutorialSeenKey(userId));
+  } catch {
+    /* 무시 */
+  }
+}
+
+/** 개발 리허설용. userId를 생략하면 v2 사용자 키만 모두 지운다. */
+export function resetTutorialForDev(userId?: string): void {
+  try {
+    if (userId) {
+      resetTutorial(userId);
+      return;
+    }
+    for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+      const key = window.localStorage.key(i);
+      if (key?.startsWith(`${TUTORIAL_SEEN_KEY_PREFIX}:`)) {
+        window.localStorage.removeItem(key);
+      }
+    }
   } catch {
     /* 무시 */
   }

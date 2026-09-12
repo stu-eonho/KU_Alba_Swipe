@@ -10,8 +10,10 @@ export { TUTORIAL_SLIDES } from './tutorialSlides';
 export type { TutorialSlide } from './tutorialSlides';
 
 export {
-  TUTORIAL_SEEN_KEY,
+  TUTORIAL_SEEN_KEY_PREFIX,
+  tutorialSeenKey,
   hasSeenTutorial,
   markTutorialSeen,
   resetTutorial,
+  resetTutorialForDev,
 } from './tutorialStorage';

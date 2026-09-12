@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Tutorial } from '@/features/onboarding';
 import { EmployerJobsPlaceholder } from '@/features/employer-ui';
 import { ProfileEditor } from '@/features/profile';
+import { NotificationBell } from '@/features/notifications';
 import { IconButton } from '@/components/ui';
 import HomeDeckPage from '@/pages/HomeDeckPage';
 import WishlistPage from '@/pages/WishlistPage';
@@ -30,6 +31,9 @@ import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import SettingsPage from '@/pages/SettingsPage';
 import EmployerApplicantsPage from '@/pages/EmployerApplicantsPage';
+import MyApplicationsPage from '@/pages/MyApplicationsPage';
+import ApplicationDetailPage from '@/pages/ApplicationDetailPage';
+import NotificationsPage from '@/pages/NotificationsPage';
 
 type RouteHandle = { title?: string };
 
@@ -58,7 +62,7 @@ function MainLayout() {
 
   if (user?.role === 'employer') {
     return (
-      <AppShell title={title} role="employer">
+      <AppShell title={title} role="employer" topBarRight={<NotificationBell />}>
         <Outlet />
       </AppShell>
     );
@@ -70,18 +74,20 @@ function MainLayout() {
 function SeekerMainLayout({ title }: { title?: string }) {
   // 찜 개수 배지. ['swipes'] 캐시를 공유하므로 찜 화면과 항상 같은 값을 보여준다.
   const { count } = useWishlist();
+  const { user } = useAuth();
+  if (!user) return null;
   return (
-    <AppShell title={title} role="seeker" wishlistCount={count}>
+    <AppShell title={title} role="seeker" wishlistCount={count} topBarRight={<NotificationBell />}>
       <Outlet />
       {/* 첫 가입자 튜토리얼. localStorage로 자체 판단하므로 조건 없이 둔다 (F6) */}
-      <Tutorial />
+      <Tutorial key={user.id} userId={user.id} />
     </AppShell>
   );
 }
 
-function MyPage() {
+function LegacyMeRedirect() {
   const { user } = useAuth();
-  return user?.role === 'employer' ? <SettingsPage /> : <ProfileEditor />;
+  return <Navigate to={user?.role === 'employer' ? '/settings' : '/settings/profile'} replace />;
 }
 
 /** 지원 화면 — 탭바 없음, 상단에 뒤로가기만 */
@@ -100,6 +106,33 @@ function FullscreenLayout() {
     >
       <Outlet />
     </AppShell>
+  );
+}
+
+function SettingsFullscreenLayout({ backTo }: { backTo: string }) {
+  const navigate = useNavigate();
+  const title = useRouteTitle();
+  return (
+    <AppShell
+      title={title}
+      showTabBar={false}
+      topBarLeft={
+        <IconButton label="뒤로 가기" size={44} onClick={() => navigate(backTo)}>
+          <ChevronLeft size={24} strokeWidth={1.75} aria-hidden />
+        </IconButton>
+      }
+    >
+      <Outlet />
+    </AppShell>
+  );
+}
+
+function NotificationsLayout() {
+  const { user } = useAuth();
+  return (
+    <SettingsFullscreenLayout
+      backTo={user?.role === 'employer' ? '/employer/applicants' : '/settings'}
+    />
   );
 }
 
@@ -139,7 +172,7 @@ export const router = createBrowserRouter([
               },
             ],
           },
-          { path: '/me', element: <MyPage />, handle: { title: '내 정보' } },
+          { path: '/me', element: <LegacyMeRedirect /> },
           { path: '/settings', element: <SettingsPage />, handle: { title: '설정' } },
         ],
       },
@@ -151,6 +184,46 @@ export const router = createBrowserRouter([
             children: [
               { path: '/apply/:jobId', element: <ApplyPage />, handle: { title: '지원하기' } },
             ],
+          },
+        ],
+      },
+      {
+        element: <RequireRole role="seeker" redirectTo="/settings" />,
+        children: [
+          {
+            element: <SettingsFullscreenLayout backTo="/settings" />,
+            children: [
+              {
+                path: '/settings/profile',
+                element: <ProfileEditor />,
+                handle: { title: '내 정보 수정' },
+              },
+              {
+                path: '/settings/applications',
+                element: <MyApplicationsPage />,
+                handle: { title: '지원 현황' },
+              },
+            ],
+          },
+          {
+            element: <SettingsFullscreenLayout backTo="/settings/applications" />,
+            children: [
+              {
+                path: '/settings/applications/:applicationId',
+                element: <ApplicationDetailPage />,
+                handle: { title: '지원 상세' },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        element: <NotificationsLayout />,
+        children: [
+          {
+            path: '/notifications',
+            element: <NotificationsPage />,
+            handle: { title: '알림' },
           },
         ],
       },

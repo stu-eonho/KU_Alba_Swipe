@@ -12,7 +12,7 @@
  */
 import clsx from 'clsx';
 import { NavLink } from 'react-router-dom';
-import { BriefcaseBusiness, Heart, Home, UserRound, UsersRound } from 'lucide-react';
+import { BriefcaseBusiness, Heart, Home, Settings, UsersRound } from 'lucide-react';
 import type { UserRole } from '@/types';
 
 export type BottomTabBarProps = {
@@ -24,14 +24,14 @@ export type BottomTabBarProps = {
 
 const SEEKER_TABS = [
   { to: '/', label: '홈', Icon: Home },
-  { to: '/wishlist', label: '찜', Icon: Heart },
-  { to: '/me', label: '내정보', Icon: UserRound },
+  { to: '/wishlist', label: '찜한 가게', Icon: Heart },
+  { to: '/settings', label: '설정', Icon: Settings },
 ] as const;
 
 const EMPLOYER_TABS = [
   { to: '/employer/applicants', label: '지원자', Icon: UsersRound },
   { to: '/employer/jobs', label: '내 공고', Icon: BriefcaseBusiness },
-  { to: '/me', label: '내정보', Icon: UserRound },
+  { to: '/settings', label: '설정', Icon: Settings },
 ] as const;
 
 export function BottomTabBar({ role = 'seeker', wishlistCount, className }: BottomTabBarProps) {

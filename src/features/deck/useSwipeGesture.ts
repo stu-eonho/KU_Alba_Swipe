@@ -58,9 +58,7 @@ export const DEPTH_SCALE = [1, 0.95, 0.9];
 export const DEPTH_Y = [0, 12, 24];
 
 /* ---- 탭(상세 보기) 판정 ----
- * 스와이프 임계값(100px)과 겹치지 않게 아주 작은 창만 탭으로 본다.
- * 거리는 use-gesture의 `tapsThreshold`로 넘겨 엔진이 직접 판정하게 하고
- * (state.tap), 시간은 state.elapsedTime으로 우리가 한 번 더 조인다. */
+ * SwipeCard의 pointer capture fallback과 use-gesture 설정이 함께 쓰는 확정값이다. */
 
 /** 누적 이동 거리가 이 값 이하여야 탭 (use-gesture `tapsThreshold`로 전달) */
 export const TAP_MAX_DISTANCE_PX = 8;
@@ -95,11 +93,6 @@ export type UseSwipeGestureOptions = {
   enabled: boolean;
   /** 드래그로 스와이프가 확정됐을 때. 버튼·키보드와 동일한 경로로 합류한다 */
   onCommit: (direction: SwipeDirection) => void;
-  /**
-   * 탭으로 판정됐을 때(= 상세 보기 열기).
-   * CRITICAL: 탭과 스와이프는 **배타적**이다. 탭이면 onCommit을 부르지 않는다.
-   */
-  onTap?: () => void;
 };
 
 export type SwipeGesture = {
@@ -113,11 +106,7 @@ export type SwipeGesture = {
   flyOut: (direction: SwipeDirection) => void;
 };
 
-export function useSwipeGesture({
-  enabled,
-  onCommit,
-  onTap,
-}: UseSwipeGestureOptions): SwipeGesture {
+export function useSwipeGesture({ enabled, onCommit }: UseSwipeGestureOptions): SwipeGesture {
   const x = useMotionValue(0);
   const opacity = useMotionValue(1);
   const prefersReduced = useReducedMotion();
@@ -125,11 +114,9 @@ export function useSwipeGesture({
   /** 한 번 확정된 카드는 더 이상 드래그를 받지 않는다 */
   const committedRef = useRef(false);
   const onCommitRef = useRef(onCommit);
-  const onTapRef = useRef(onTap);
   useEffect(() => {
     onCommitRef.current = onCommit;
-    onTapRef.current = onTap;
-  }, [onCommit, onTap]);
+  }, [onCommit]);
 
   // 드래그 추종: 애니메이션 없이 즉시. transition을 걸면 반응이 둔해 보인다.
   const rotate = useTransform(x, (v) => clamp(v / ROTATE_DIVISOR, -ROTATE_MAX_DEG, ROTATE_MAX_DEG));
@@ -138,7 +125,7 @@ export function useSwipeGesture({
   const nopeOpacity = useTransform(x, (v) => clamp(-v / SWIPE_THRESHOLD_PX, 0, 1));
 
   const bind = useDrag(
-    ({ down, movement: [mx], velocity: [vx], direction: [dx], last, tap, elapsedTime }) => {
+    ({ down, movement: [mx], velocity: [vx], direction: [dx], last, tap }) => {
       if (committedRef.current) return;
 
       if (down) {
@@ -147,15 +134,11 @@ export function useSwipeGesture({
       }
       if (!last) return;
 
-      /*
-       * 탭 판정이 스와이프 판정보다 **먼저**다. 둘은 배타적이어야 한다.
-       * `tap`은 use-gesture 엔진이 누적 이동거리 ≤ tapsThreshold(=8px)로 계산해 준다.
-       * 직접 계산하지 않는 이유: 엔진은 축별 누적 절대거리를 쓰므로 손가락이
-       * 왔다 갔다 흔들린 경우까지 잡아낸다. 시간(500ms)만 여기서 더 조인다.
-       */
-      if (tap && elapsedTime < TAP_MAX_MS) {
-        x.set(0); // 8px 이내라 사실상 0이지만, 다음 제스처를 위해 확실히 되돌린다
-        onTapRef.current?.();
+      // 상세 open은 SwipeCard의 pointer capture가 담당한다. 여기서는 tap을 swipe 속도
+      // 판정으로 흘려보내지 않는 배타성만 보장한다. 짧은 3px 움직임의 release 속도가
+      // 높아도 카드가 동시에 날아가면 안 된다.
+      if (tap) {
+        x.set(0);
         return;
       }
 
