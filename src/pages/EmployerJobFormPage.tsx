@@ -321,7 +321,7 @@ export default function EmployerJobFormPage() {
           value={description}
           onChange={setDescription}
           maxLength={MAX_DESCRIPTION}
-          placeholder="어떤 일을 하는지, 분위기가 어떤지 적어주세요."
+          placeholder="예: 음료 제조, 포스 계산, 마감 정리를 맡아요. 초보자는 첫 주에 레시피 교육을 하고, 평일 오후에는 2명이 함께 근무합니다."
           hint="비워 두면 한 줄 요약이 대신 들어갑니다"
           disabled={isCreating}
         />

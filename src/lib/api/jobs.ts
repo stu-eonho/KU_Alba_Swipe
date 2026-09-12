@@ -88,7 +88,12 @@ export async function fetchDeckJobs(): Promise<Job[]> {
 
   const seenIds = (swipeRows ?? []).map((row) => row.job_id as string);
 
-  let query = supabase.from('jobs').select('*').limit(20);
+  /*
+   * 추천은 서버가 잘라 낸 뒤가 아니라 충분한 후보군 전체에서 정렬해야 의미가 있다.
+   * 20건만 읽으면 DB에 샘플을 늘려도 첫 20건 밖의 공고는 점수 계산조차 못 한다.
+   * 데모 규모(150건 안팎)를 한 번에 포괄하되 무제한 조회가 되지 않도록 상한은 둔다.
+   */
+  let query = supabase.from('jobs').select('*').limit(200);
   if (seenIds.length > 0) {
     query = query.not('id', 'in', `(${seenIds.join(',')})`);
   }
@@ -96,7 +101,7 @@ export async function fetchDeckJobs(): Promise<Job[]> {
   const { data, error } = await query;
   if (error) throw error;
 
-  // 정렬하지 않습니다 — 추천 알고리즘은 범위 밖이고, 시드 순서 그대로 나옵니다.
+  // 여기서는 정렬하지 않습니다 — useDeck이 저장된 취향 점수로 정렬합니다.
   return ((data ?? []) as JobRow[]).map(toJob);
 }
 

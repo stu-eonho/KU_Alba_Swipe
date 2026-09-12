@@ -295,7 +295,7 @@ export default function SignupPage() {
               value={intro}
               onChange={setIntro}
               maxLength={MAX_INTRO_LENGTH}
-              placeholder="어떤 일을 해봤는지, 언제 일할 수 있는지 적어주세요."
+              placeholder="예: 카페에서 6개월 일했고 손님 응대에 자신 있어요. 평일 오후와 주말에 근무할 수 있습니다."
               hint="비워 두고 나중에 채워도 됩니다"
               disabled={isPending}
             />
