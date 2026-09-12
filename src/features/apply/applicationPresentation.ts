@@ -2,15 +2,23 @@ import type { ApplicationStatus } from '@/types';
 
 export const MY_APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {
   applied: '지원 완료',
-  viewed: '구인자 열람',
-  accepted: '채용 확정',
+  viewed: '구인자 읽음',
+  accepted: '관심 도착',
   rejected: '지원 종료',
 };
 
 export function applicationBadgeVariant(status: ApplicationStatus) {
+  if (status === 'applied') return 'info' as const;
   if (status === 'accepted') return 'success' as const;
   if (status === 'rejected') return 'danger' as const;
   return 'neutral' as const;
+}
+
+export function applicationBarClass(status: ApplicationStatus): string {
+  if (status === 'applied') return 'bg-info';
+  if (status === 'accepted') return 'bg-success';
+  if (status === 'rejected') return 'bg-error';
+  return 'bg-line';
 }
 
 export function formatApplicationDate(value: string, withTime = false): string {

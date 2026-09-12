@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Badge, EmptyState, Skeleton } from '@/components/ui';
 import {
   MY_APPLICATION_STATUS_LABEL,
+  applicationBarClass,
   applicationBadgeVariant,
   formatApplicationDate,
 } from '@/features/apply/applicationPresentation';
@@ -55,7 +56,11 @@ export default function ApplicationDetailPage() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <section className="rounded-tile border border-line-soft bg-surface p-4">
+      <section className="rounded-tile border-line-soft relative border bg-surface py-4 pr-4 pl-6">
+        <span
+          className={`absolute top-3 bottom-3 left-2 w-[3px] rounded-full ${applicationBarClass(application.status)}`}
+          aria-hidden
+        />
         <div className="flex items-center justify-between gap-3">
           <h2 className="clamp-1 text-[16px] font-semibold text-ink">
             {application.job.storeName}
