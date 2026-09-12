@@ -8,12 +8,22 @@
  */
 import { useParams } from 'react-router-dom';
 import { ApplyForm } from '@/features/apply/ApplyForm';
-import { NotFoundState, findMockJob } from '@/features/wishlist';
+import { NotFoundState } from '@/features/wishlist';
+import { useWishlist } from '@/hooks/useWishlist';
+import { WishlistGridSkeleton } from '@/features/wishlist';
 
 export default function ApplyPage() {
   const { jobId } = useParams<{ jobId: string }>();
-  // TODO(통합): A의 공고 단건 조회 훅이 생기면 교체 (현재는 MOCK_JOBS에서 찾는다)
-  const job = findMockJob(jobId);
+  /**
+   * 이 화면은 항상 찜 목록의 카드 뒷면에서 들어온다. 그래서 단건 조회 훅 없이
+   * ['swipes'] 캐시에서 찾는다 — 이미 받아 둔 데이터라 추가 요청이 없다.
+   */
+  const { entries, isLoading } = useWishlist();
+  const job = entries.find((entry) => entry.job.id === jobId)?.job;
+
+  if (isLoading) {
+    return <WishlistGridSkeleton />;
+  }
 
   if (!job) {
     return <NotFoundState />;

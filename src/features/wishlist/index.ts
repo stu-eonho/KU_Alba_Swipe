@@ -37,6 +37,4 @@ export {
 
 export { JobThumb, formatWage, formatSchedule, jobAriaLabel, categoryGradient } from './jobPresentation';
 
-export { useMockWishlist, getMockReviews, findMockJob, MOCK_WISHLIST_ENTRIES, MOCK_REVIEWS } from './mockWishlist';
-export type { MockWishlist } from './mockWishlist';
 

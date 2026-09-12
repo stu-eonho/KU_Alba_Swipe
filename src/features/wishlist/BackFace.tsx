@@ -20,13 +20,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Chip, IconButton } from '@/components/ui';
 import type { Job, Review } from '@/types';
 import { formatWage } from './jobPresentation';
-import { getMockReviews } from './mockWishlist';
 
 export type BackFaceProps = {
   job: Job;
   /**
-   * 노출할 리뷰. 생략하면 목데이터에서 파생한다.
-   * TODO(통합): A의 useReviews 완성 시 호출부에서 `const { reviews } = useReviews(job.id)`를 넘긴다
+   * 노출할 리뷰. 호출부가 useReviews(job.id)로 받아 넘긴다.
+   * 비어 있으면 리뷰 섹션을 그리지 않는다 — 목데이터로 폴백하면 실제 공고에
+   * 가짜 리뷰가 붙어 데모에서 사실을 왜곡한다.
    */
   reviews?: Review[];
   /** 우상단 X. 주지 않으면 닫기 버튼을 렌더하지 않는다(뒤집기 컨테이너가 직접 그릴 때) */
@@ -61,8 +61,7 @@ function ReviewCard({ review }: { review: Review }) {
 
 export function BackFace({ job, reviews, onClose, onBeforeApply, className }: BackFaceProps) {
   const navigate = useNavigate();
-  // TODO(통합): A의 useReviews 완성 시 교체
-  const list = reviews ?? getMockReviews(job.id);
+  const list = reviews ?? [];
 
   const handleApply = () => {
     onBeforeApply?.();

@@ -20,14 +20,23 @@ import {
   WishlistEmpty,
   WishlistGrid,
   WishlistGridSkeleton,
-  useMockWishlist,
 } from '@/features/wishlist';
+import { useWishlist } from '@/hooks/useWishlist';
+import { useReviews } from '@/hooks/useReviews';
+import { useDeck } from '@/hooks/useDeck';
 import type { Job } from '@/types';
 
 export default function WishlistPage() {
-  // TODO(통합): A의 useWishlist 완성 시 교체 — useMockWishlist() → useWishlist()
-  const { entries, isLoading, isError, remove } = useMockWishlist();
+  const { entries, isLoading, isError, retry, remove } = useWishlist();
   const toast = useToast();
+
+  /**
+   * 찜 해제 되돌리기용. useWishlist.remove()는 direction을 'left'로 내리기만 하고
+   * 복구 함수를 주지 않으므로, 같은 레코드를 'right'로 다시 올려 되살린다.
+   * useDeck.swipe()는 upsert라 이 용도에 그대로 맞는다(덱 캐시에서 빼는 부수효과도
+   * 올바르다 — 되살린 공고가 덱에 다시 나오면 안 된다).
+   */
+  const { swipe } = useDeck();
 
   /**
    * 확대된 카드로 띄울 공고. 오버레이는 <ExpandedCard>가 렌더한다 (deck-interaction 소유).
@@ -43,7 +52,7 @@ export default function WishlistPage() {
   }
 
   if (isError) {
-    return <LoadErrorState title="찜 목록을 불러오지 못했어요" onRetry={() => location.reload()} />;
+    return <LoadErrorState title="찜 목록을 불러오지 못했어요" onRetry={() => void retry()} />;
   }
 
   if (entries.length === 0) {
@@ -51,9 +60,12 @@ export default function WishlistPage() {
   }
 
   const handleUnwishlist = (job: Job) => {
-    const restore = remove(job.id);
+    remove(job.id);
     if (expandedJob?.id === job.id) setExpandedJob(null);
-    toast.success('찜을 해제했어요', { actionLabel: '되돌리기', onAction: restore });
+    toast.success('찜을 해제했어요', {
+      actionLabel: '되돌리기',
+      onAction: () => swipe(job.id, 'right'),
+    });
   };
 
   return (
@@ -66,8 +78,16 @@ export default function WishlistPage() {
         expandedJobId={expandedJob?.id ?? null}
       />
 
-      {/* TODO(통합): A의 useReviews 완성 시 reviews={...}를 넘긴다 */}
-      <ExpandedCard job={expandedJob} onClose={() => setExpandedJob(null)} />
+      <ExpandedCardWithReviews job={expandedJob} onClose={() => setExpandedJob(null)} />
     </>
   );
+}
+
+/**
+ * 리뷰는 카드가 열릴 때만 가져온다. useReviews는 jobId가 비면 요청하지 않으므로
+ * 닫힌 상태에서는 네트워크 호출이 없다.
+ */
+function ExpandedCardWithReviews({ job, onClose }: { job: Job | null; onClose: () => void }) {
+  const { reviews } = useReviews(job?.id ?? '');
+  return <ExpandedCard job={job} onClose={onClose} reviews={reviews} />;
 }

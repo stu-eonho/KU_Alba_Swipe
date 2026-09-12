@@ -7,26 +7,31 @@
  * 화면 컨테이너에 overflow-hidden을 주는 이유: 카드가 화면 밖으로 날아갈 때
  * 가로 스크롤이 생기거나 드래그 중 페이지가 같이 움직이는 것을 막는다.
  */
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { SearchX, WifiOff } from 'lucide-react';
-import { EmptyState, Skeleton } from '@/components/ui';
+import { EmptyState, Skeleton, useToast } from '@/components/ui';
 import { ErrorBoundary } from '@/components/layout';
 import { CardStack, SwipeControls } from '@/features/deck';
-import { MOCK_JOBS } from '@/features/deck/mockJobs';
+import { useDeck } from '@/hooks/useDeck';
 import type { Job, SwipeDirection } from '@/types';
 
 export default function HomeDeckPage() {
-  // TODO(통합): A의 useDeck 완성 시 교체 →  const { jobs, isLoading, isError, swipe } = useDeck();
-  const jobs = MOCK_JOBS;
-  const isLoading: boolean = false;
-  const isError: boolean = false;
+  const { jobs, isLoading, isError, retry, swipe, swipeError } = useDeck();
+  const toast = useToast();
 
-  const handleSwipe = useCallback((job: Job, direction: SwipeDirection) => {
-    // CRITICAL: 낙관적. 카드는 이미 날아갔다. 실패해도 되돌리지 않고 토스트로만 알린다.
-    // TODO(통합): A의 useDeck 완성 시 →  swipe(job.id, direction);
-    void job;
-    void direction;
-  }, []);
+  const handleSwipe = useCallback(
+    (job: Job, direction: SwipeDirection) => {
+      // CRITICAL: 낙관적. 카드는 이미 날아갔다. useDeck이 ['jobs'] 캐시에서 빼준다.
+      // 실패해도 되돌리지 않는다 — 이미 다음 카드를 보고 있다.
+      swipe(job.id, direction);
+    },
+    [swipe],
+  );
+
+  // 저장 실패는 토스트로만 알린다. UI는 그대로 둔다.
+  useEffect(() => {
+    if (swipeError) toast.error('저장에 실패했어요. 네트워크를 확인해 주세요');
+  }, [swipeError, toast]);
 
   return (
     <div className="flex flex-col overflow-hidden">
@@ -39,8 +44,7 @@ export default function HomeDeckPage() {
             title="공고를 불러오지 못했어요"
             actionLabel="다시 시도"
             actionVariant="secondary"
-            // TODO(통합): A의 useDeck 완성 시 →  onAction={refetch}
-            onAction={() => window.location.reload()}
+            onAction={() => void retry()}
           />
         </div>
       ) : jobs.length === 0 ? (

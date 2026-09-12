@@ -43,7 +43,6 @@ export type CardStackProps = {
 };
 
 export function CardStack({ jobs, onSwipe, className }: CardStackProps) {
-  const [index, setIndex] = useState(0);
   const [exiting, setExiting] = useState<ExitingCard[]>([]);
   /** aria-live는 같은 문자열이 연속되면 다시 읽지 않는다. seq로 텍스트를 미세하게 바꾼다 */
   const [announcement, setAnnouncement] = useState<{ text: string; seq: number } | null>(null);
@@ -51,12 +50,6 @@ export function CardStack({ jobs, onSwipe, className }: CardStackProps) {
   const prefersReduced = useReducedMotion();
   const timersRef = useRef<number[]>([]);
   const prefetchedRef = useRef<Set<string>>(new Set());
-
-  // 공고 목록이 통째로 바뀌면(=A의 useDeck 연결 시) 처음부터 다시 본다
-  useEffect(() => {
-    setIndex(0);
-    setExiting([]);
-  }, [jobs]);
 
   useEffect(
     () => () => {
@@ -66,20 +59,31 @@ export function CardStack({ jobs, onSwipe, className }: CardStackProps) {
     [],
   );
 
-  const visible = useMemo(() => jobs.slice(index, index + STACK_DEPTH), [jobs, index]);
+  /**
+   * CRITICAL: 이 컴포넌트는 index를 갖지 않는다. 스와이프한 공고는 부모(useDeck)가
+   * 배열에서 빼고, 여기는 항상 앞에서 3장만 본다.
+   *
+   * 예전에는 index를 올리면서 동시에 부모가 배열을 줄여 한 프레임 동안 카드를 건너뛰었고,
+   * jobs가 바뀔 때 exiting을 비우는 effect가 날아가는 애니메이션을 매번 잘라먹었다.
+   * 상태를 한 곳(부모)에만 두면 두 문제가 함께 사라진다.
+   */
+  const visible = useMemo(() => jobs.slice(0, STACK_DEPTH), [jobs]);
   const exhausted = visible.length === 0;
+
+  /** 부모가 아직 배열에서 빼기 전에 같은 카드가 두 번 스와이프되는 것을 막는다 */
+  const exitingIds = useMemo(() => new Set(exiting.map((e) => e.job.id)), [exiting]);
 
   /** 드래그 · 버튼 · 키보드가 전부 이 함수를 호출한다. */
   const commitSwipe = useCallback(
     (direction: SwipeDirection) => {
-      const job = jobs[index];
+      const job = jobs[0];
       if (!job) return;
+      if (exitingIds.has(job.id)) return; // 부모 반영 전 연타 방지
 
       swipeHaptic();
 
-      // 낙관적: 먼저 날리고 인덱스를 올린다. 응답을 기다리지 않는다.
+      // 낙관적: 먼저 날린다. 응답도, 부모의 배열 갱신도 기다리지 않는다.
       setExiting((prev) => [{ job, direction }, ...prev]);
-      setIndex((i) => i + 1);
       setAnnouncement((prev) => ({
         text: direction === 'right' ? '찜했습니다' : '관심 없음으로 표시했습니다',
         seq: (prev?.seq ?? 0) + 1,
@@ -93,7 +97,7 @@ export function CardStack({ jobs, onSwipe, className }: CardStackProps) {
       }, flyMs + UNMOUNT_GRACE_MS);
       timersRef.current.push(timer);
     },
-    [index, jobs, onSwipe, prefersReduced],
+    [exitingIds, jobs, onSwipe, prefersReduced],
   );
 
   // 키보드: ArrowLeft = 관심 없음, ArrowRight = 찜
@@ -121,14 +125,14 @@ export function CardStack({ jobs, onSwipe, className }: CardStackProps) {
 
   // 다음 카드 이미지를 미리 디코딩한다. 넘긴 뒤 로드되면 데모에서 제일 티 난다.
   useEffect(() => {
-    jobs.slice(index + 1, index + 1 + PREFETCH_COUNT).forEach((job) => {
+    jobs.slice(1, 1 + PREFETCH_COUNT).forEach((job) => {
       if (!job.imageUrl) return;
       if (prefetchedRef.current.has(job.imageUrl)) return; // 연속 스와이프 시 중복 요청 방지
       prefetchedRef.current.add(job.imageUrl);
       const img = new Image();
       img.src = job.imageUrl;
     });
-  }, [index, jobs]);
+  }, [jobs]);
 
   const cards = [
     ...exiting.map((entry) => ({

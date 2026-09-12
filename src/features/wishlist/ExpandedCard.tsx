@@ -50,7 +50,7 @@ export type ExpandedCardProps = {
   onClose: () => void;
   /**
    * 뒷면에 노출할 리뷰. 생략하면 BackFace가 목데이터에서 파생한다.
-   * TODO(통합): A의 useReviews 완성 시 호출부에서 넘긴다
+   * 호출부(WishlistPage)가 useReviews(job.id)로 받아 넘긴다
    */
   reviews?: Review[];
 };

@@ -12,12 +12,12 @@
  * 화면 제목은 라우트의 handle.title에서 온다. 데이터에 따라 바꿔야 하면
  * 페이지 안에서 `useTopBarTitle('찜한 공고 8')`을 호출한다.
  *
- * 탭바 찜 배지(wishlistCount)는 아직 연결하지 않았다 — useWishlist()가 A의 스텁이라
- * 호출하면 throw한다. A가 채우면 MainLayout에서 한 줄로 연결한다.
+ * 탭바 찜 배지는 MainLayout에서 useWishlist().count로 연결한다.
  */
 import { createBrowserRouter, Navigate, Outlet, useMatches, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { AppShell, RequireAuth } from '@/components/layout';
+import { useWishlist } from '@/hooks/useWishlist';
 import { IconButton } from '@/components/ui';
 import HomeDeckPage from '@/pages/HomeDeckPage';
 import WishlistPage from '@/pages/WishlistPage';
@@ -49,8 +49,10 @@ function PublicLayout() {
 /** 홈 덱 / 찜 / 설정 — 탑바 56px + 탭바 64px */
 function MainLayout() {
   const title = useRouteTitle();
+  // 찜 개수 배지. ['swipes'] 캐시를 공유하므로 찜 화면과 항상 같은 값을 보여준다.
+  const { count } = useWishlist();
   return (
-    <AppShell title={title}>
+    <AppShell title={title} wishlistCount={count}>
       <Outlet />
     </AppShell>
   );
