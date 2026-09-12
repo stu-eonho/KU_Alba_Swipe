@@ -3,7 +3,7 @@
  *
  * offers = 사장님이 지원자에게 보인 반응. 사장님 1명당 지원자 1명에 1행입니다.
  *   right = 관심 있음 (구직자에게 알림이 갑니다)
- *   left  = 보류 (지우지 않습니다 — 보류 탭에서 되살릴 수 있어야 합니다)
+ *   left  = 관심 없음 (행은 지우지 않습니다 — 그래야 그 지원자가 다시 뜨지 않습니다)
  *
  * 알림은 이 파일이 만들지 않습니다. offers 에 right 가 들어오면 DB trigger 가
  * 상대가 이미 지원했는지 보고 매칭/관심 알림을 만듭니다.
@@ -43,8 +43,8 @@ export async function fetchMyOffers(): Promise<Offer[]> {
 /**
  * 지원자에 대한 판단 기록.
  *
- * upsert 입니다 — 보류(left)한 사람을 나중에 "다시 보기"로 관심(right)으로
- * 바꾸는 것이 보류 탭의 존재 이유입니다. insert 면 UNIQUE (employer_id, seeker_id)
+ * upsert 입니다. 같은 지원자를 다시 판단하는 경로가 생겨도 그대로 동작합니다 —
+ * insert 면 UNIQUE (employer_id, seeker_id)
  * 때문에 되살리기가 에러로 떨어집니다.
  *
  * employer_id 는 컬럼 default 가 auth.uid() 이므로 보내지 않습니다.

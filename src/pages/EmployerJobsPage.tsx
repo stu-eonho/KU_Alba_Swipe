@@ -10,12 +10,13 @@
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { useMyJobs } from '@/hooks/useEmployerJobs';
-import type { Job } from '@/types';
+import { useMyJobs, useUpdateJob } from '@/hooks/useEmployerJobs';
+import { JobEditRow } from '@/features/employer/JobEditRow';
 
 export default function EmployerJobsPage() {
   const { user } = useAuth();
   const { jobs, isLoading, isError, retry } = useMyJobs();
+  const { updateJob, isUpdating } = useUpdateJob();
 
   // 라우터 가드가 막지만, 이 화면만 직접 열렸을 때도 터지지 않게 둡니다.
   if (!user || user.role !== 'employer') return null;
@@ -60,39 +61,19 @@ export default function EmployerJobsPage() {
       )}
 
       {jobs.length > 0 && (
-        <ul className="mt-1">
-          {jobs.map((job) => (
-            <li key={job.id} className="border-t border-line-soft px-4 py-3">
-              <JobRow job={job} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function JobRow({ job }: { job: Job }) {
-  return (
-    <div>
-      <p className="clamp-1 text-[15px] font-semibold text-ink">{job.storeName}</p>
-      <p className="mt-0.5 text-[13px] text-muted">
-        {job.category} · <span className="tabular">{job.hourlyWage.toLocaleString()}</span>원
-      </p>
-      <p className="mt-0.5 text-[12px] text-faint">
-        {job.workDays} {job.workHours}
-      </p>
-      {job.wantedTraits && job.wantedTraits.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {job.wantedTraits.map((trait) => (
-            <span
-              key={trait}
-              className="rounded-full bg-subtle px-2 py-0.5 text-[11px] font-medium text-muted"
-            >
-              {trait}
-            </span>
-          ))}
-        </div>
+        <>
+          <p className="px-4 pb-1 text-[12px] text-faint">공고를 누르면 바로 수정할 수 있어요</p>
+          <ul>
+            {jobs.map((job) => (
+              <JobEditRow
+                key={job.id}
+                job={job}
+                isSaving={isUpdating}
+                onSave={(patch) => updateJob(job.id, patch)}
+              />
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

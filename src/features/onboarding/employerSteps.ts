@@ -9,11 +9,10 @@
  *
  * 앵커(`data-tour`):
  *   applicant-deck — ApplicantDeck 의 카드 스택 영역 전체(카드 개별이 아니다)
- *   tab-held       — BottomTabBar 의 보류 탭
  *   tab-jobs       — BottomTabBar 의 내 공고 탭
  * 앵커를 못 찾으면 스포트라이트 없이 설명 카드만 뜬다(useAnchorRect). 절대 깨지지 않는다.
  */
-import { Archive, BriefcaseBusiness, Heart, UsersRound } from 'lucide-react';
+import { UserX, BriefcaseBusiness, Heart, UsersRound } from 'lucide-react';
 import type { TutorialStep } from './tutorialSteps';
 import type { TutorialSlide } from './tutorialSlides';
 
@@ -35,14 +34,6 @@ export const EMPLOYER_STEPS: readonly TutorialStep[] = [
     waitFor: 'right',
     padding: 6,
     radius: 14,
-  },
-  {
-    id: 'employer-held',
-    anchor: 'tab-held',
-    title: '왼쪽은 보류예요',
-    body: '왼쪽으로 민 지원자는 사라지지 않아요.\n보류 탭에 남아 언제든 다시 볼 수 있습니다.',
-    padding: 4,
-    radius: 12,
   },
   {
     id: 'employer-jobs',
@@ -80,9 +71,9 @@ export const EMPLOYER_SLIDES: readonly TutorialSlide[] = [
   },
   {
     id: 'employer-left',
-    Icon: Archive,
-    title: '왼쪽으로 넘기면 보류',
-    body: '왼쪽으로 민 지원자는 사라지지 않아요.\n보류 탭에 남아 다시 볼 수 있습니다.',
+    Icon: UserX,
+    title: '왼쪽으로 넘기면 관심 없음',
+    body: '지금 조건이 맞지 않는 지원자는\n왼쪽으로 넘기면 목록에서 빠집니다.',
   },
   {
     id: 'employer-post',

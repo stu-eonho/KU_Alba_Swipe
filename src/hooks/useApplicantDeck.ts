@@ -1,14 +1,14 @@
 /**
  * OWNER: 개발자 A (데이터/인증)
  *
- * 사장님이 넘겨 볼 지원자 덱과, 보류함.
+ * 구인자가 넘겨 볼 지원자 덱.
  *
  *   const { applicants, isLoading, isError, retry, offer, hiddenCount } = useApplicantDeck();
  *   offer(seeker.id, 'right', entry.job.id);   // 관심 있어요 → trigger 가 알림 생성
- *   offer(seeker.id, 'left',  entry.job.id);   // 보류 → 사라지지 않고 보류함으로
+ *   offer(seeker.id, 'left',  entry.job.id);   // 관심 없음
  *
- *   const { held, isLoading, restore } = useHeldApplicants();
- *   restore(seeker.id, entry.job.id);          // 다시 보기 → 덱으로 복귀
+ * 보류 탭은 없앴습니다. left 행은 그대로 남겨 두므로 한 번 넘긴 지원자는
+ * 다시 뜨지 않습니다 — 되살리는 화면만 사라진 것이고 데이터는 그대로입니다.
  *
  * 덱 원소는 ApplicantEntry 그대로입니다. 사장님은 "지원자"가 아니라
  * "내 공고에 지원한 사람"을 보는 것이고, 지원 공고·메시지가 카드에 필요합니다.
@@ -56,7 +56,7 @@ function dedupeBySeeker(entries: ApplicantEntry[]): ApplicantEntry[] {
   });
 }
 
-/** 판단 기록 쓰기. 덱과 보류함이 같은 것을 씁니다. */
+/** 판단 기록 쓰기. */
 function useOffer() {
   const queryClient = useQueryClient();
 
@@ -119,7 +119,7 @@ export function useApplicantDeck() {
   const { applicants, offers } = useEmployerSources();
   const { offer, offerError } = useOffer();
 
-  // 이미 판단한 사람은 덱에서 뺍니다 (보류든 관심이든).
+  // 이미 판단한 사람은 덱에서 뺍니다 (관심 없음이든 관심 있음이든).
   const judged = new Set((offers.data ?? []).map((entry) => entry.seekerId));
   const pending = dedupeBySeeker(applicants.data ?? []).filter(
     (entry) => !judged.has(entry.seeker.id),
@@ -135,42 +135,7 @@ export function useApplicantDeck() {
     },
     offer,
     offerError,
-    /** 보류함에 들어 있는 인원수. 탭 배지에 쓰세요 */
+    /** 관심 없음으로 넘긴 인원수 */
     hiddenCount: (offers.data ?? []).filter((entry) => entry.direction === 'left').length,
-  };
-}
-
-/**
- * 보류함.
- *
- * 보류는 삭제가 아닙니다. 되돌릴 수 있어야 한다는 게 이 기능의 핵심이라
- * offers 행을 지우지 않고 direction 만 바꿉니다.
- */
-export function useHeldApplicants() {
-  const { applicants, offers } = useEmployerSources();
-  const { offer, offerError } = useOffer();
-
-  const heldIds = new Set(
-    (offers.data ?? [])
-      .filter((entry) => entry.direction === 'left')
-      .map((entry) => entry.seekerId),
-  );
-  const held = dedupeBySeeker(applicants.data ?? []).filter((entry) =>
-    heldIds.has(entry.seeker.id),
-  );
-
-  const restore = useCallback(
-    (seekerId: string, jobId?: string | null) => {
-      offer(seekerId, 'right', jobId);
-    },
-    [offer],
-  );
-
-  return {
-    held,
-    isLoading: applicants.isLoading || offers.isLoading,
-    isError: applicants.isError || offers.isError,
-    restore,
-    restoreError: offerError,
   };
 }

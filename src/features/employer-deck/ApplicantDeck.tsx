@@ -52,11 +52,11 @@ export type ApplicantDeckProps = {
   /**
    * 스와이프가 확정된 직후 호출된다(낙관적 — 카드는 이미 날아갔다).
    *   direction 'right' = 관심 있어요 → 지원자에게 알림 발송
-   *   direction 'left'  = 보류        → 삭제가 아니라 보류 목록으로 이동
+   *   direction 'left'  = 관심 없음   → offers 에 기록이 남아 다시 뜨지 않는다
    * 여기서 실패해도 카드를 되돌리지 말 것.
    */
   onDecide?: (seekerId: string, direction: SwipeDirection, jobId: string) => void;
-  /** 빈 상태에서 누를 CTA 경로. 기본은 보류 탭 */
+  /** 빈 상태에서 누를 CTA 경로. 기본은 내 공고 탭 */
   emptyActionTo?: string;
   className?: string;
 };
@@ -64,7 +64,7 @@ export type ApplicantDeckProps = {
 export function ApplicantDeck({
   entries,
   onDecide,
-  emptyActionTo = '/employer/held',
+  emptyActionTo = '/employer/jobs',
   className,
 }: ApplicantDeckProps) {
   const [exiting, setExiting] = useState<ExitingCard[]>([]);
@@ -105,7 +105,7 @@ export function ApplicantDeck({
         text:
           direction === 'right'
             ? `${entry.seeker.nickname}님에게 관심을 보냈습니다`
-            : `${entry.seeker.nickname}님을 보류했습니다`,
+            : `${entry.seeker.nickname}님을 관심 없음으로 표시했습니다`,
         seq: (prev?.seq ?? 0) + 1,
       }));
 
@@ -128,7 +128,7 @@ export function ApplicantDeck({
     [entries, exitingIds, onDecide, prefersReduced],
   );
 
-  // 키보드: ArrowLeft = 보류, ArrowRight = 관심 있어요
+  // 키보드: ArrowLeft = 관심 없음, ArrowRight = 관심 있어요
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -176,8 +176,8 @@ export function ApplicantDeck({
             <EmptyState
               icon={<UsersRound size={56} className="text-faint" aria-hidden />}
               title="지원자를 다 봤어요!"
-              description="보류한 지원자를 다시 볼 수 있어요"
-              actionLabel="보류 목록 보기"
+              description="내 공고를 올리면 더 많은 지원자가 옵니다"
+              actionLabel="내 공고 보기"
               actionTo={emptyActionTo}
             />
           </div>
