@@ -31,6 +31,14 @@ export const TUTORIAL_ACTIVE_EVENT = 'albaswipe:tutorial-active';
 export type TutorialSwipeDetail = { direction: SwipeDirection };
 export type TutorialActiveDetail = { active: boolean };
 
+// 이벤트 리스너가 붙기 직전에 튜토리얼 effect가 실행되는 경우도 놓치지 않도록
+// 현재 상태를 모듈 안에 함께 보관한다. 서버나 localStorage에는 저장하지 않는다.
+let tutorialActive = false;
+
+export function isTutorialActive(): boolean {
+  return tutorialActive;
+}
+
 /** 덱에서 호출한다. 실패해도 스와이프 자체는 성공해야 하므로 전부 삼킨다. */
 export function emitTutorialSwipe(direction: SwipeDirection): void {
   try {
@@ -44,6 +52,7 @@ export function emitTutorialSwipe(direction: SwipeDirection): void {
 
 /** 튜토리얼이 마운트/언마운트될 때 호출한다. */
 export function emitTutorialActive(active: boolean): void {
+  tutorialActive = active;
   try {
     window.dispatchEvent(
       new CustomEvent<TutorialActiveDetail>(TUTORIAL_ACTIVE_EVENT, { detail: { active } }),

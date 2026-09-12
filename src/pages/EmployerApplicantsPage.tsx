@@ -9,13 +9,22 @@
  * 라벨 2개짜리 작은 스위치로 두고, 선택 표시는 면(bg-surface)으로만 한다 — 그림자 없음,
  * 레드는 CTA 전용이라 쓰지 않는다.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Inbox, WifiOff } from 'lucide-react';
 import clsx from 'clsx';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState, Skeleton } from '@/components/ui';
 import { ApplicantCard, ApplicantDetail } from '@/features/employer-ui';
 import { ApplicantDeck } from '@/features/employer-deck';
+import {
+  TUTORIAL_ACTIVE_EVENT,
+  isTutorialActive,
+  type TutorialActiveDetail,
+} from '@/features/onboarding';
+import {
+  EMPLOYER_TUTORIAL_SEEKER_ID,
+  createEmployerTutorialApplicant,
+} from '@/features/onboarding/employerTutorialApplicant';
 import { useApplicantDeck } from '@/hooks/useApplicantDeck';
 import { useEmployerApplicants } from '@/hooks/useEmployerApplicants';
 import type { ApplicantEntry, ApplicationStatus } from '@/types';
@@ -80,8 +89,36 @@ function ViewModeToggle({
 /** 스와이프 보기 — 아직 판단하지 않은 지원자만 올라온다. 빈 상태는 ApplicantDeck이 갖고 있다 */
 function SwipeView() {
   const { applicants, isLoading, isError, retry, offer } = useApplicantDeck();
+  const [tutorialActive, setTutorialActive] = useState(() => isTutorialActive());
+  const [sampleDismissed, setSampleDismissed] = useState(false);
+  const tutorialApplicant = useMemo(() => createEmployerTutorialApplicant(), []);
 
-  if (isLoading) {
+  useEffect(() => {
+    const handleTutorialActive = (event: Event) => {
+      const active = (event as CustomEvent<TutorialActiveDetail>).detail?.active === true;
+      setTutorialActive(active);
+      if (active) setSampleDismissed(false);
+    };
+    window.addEventListener(TUTORIAL_ACTIVE_EVENT, handleTutorialActive);
+    return () => window.removeEventListener(TUTORIAL_ACTIVE_EVENT, handleTutorialActive);
+  }, []);
+
+  const showTutorialApplicant = tutorialActive && !sampleDismissed;
+  const deckEntries = showTutorialApplicant ? [tutorialApplicant, ...applicants] : applicants;
+
+  const handleDecide = useCallback(
+    (seekerId: string, direction: 'left' | 'right', jobId: string) => {
+      if (seekerId === EMPLOYER_TUTORIAL_SEEKER_ID) {
+        // 가상 카드는 화면에서만 제거한다. DB offer와 알림은 만들지 않는다.
+        setSampleDismissed(true);
+        return;
+      }
+      offer(seekerId, direction, jobId);
+    },
+    [offer],
+  );
+
+  if (isLoading && !showTutorialApplicant) {
     return (
       <div className="flex flex-col items-center" role="status" aria-label="지원자를 불러오는 중">
         <div className="mx-auto mt-4 w-[calc(100%-32px)] max-w-[448px]">
@@ -91,7 +128,7 @@ function SwipeView() {
     );
   }
 
-  if (isError) {
+  if (isError && !showTutorialApplicant) {
     return (
       <EmptyState
         icon={<WifiOff size={48} className="text-faint" aria-hidden />}
@@ -104,8 +141,7 @@ function SwipeView() {
     );
   }
 
-  // onDecide 와 offer 는 시그니처가 같다 — 그대로 넘긴다.
-  return <ApplicantDeck entries={applicants} onDecide={offer} />;
+  return <ApplicantDeck entries={deckEntries} onDecide={handleDecide} />;
 }
 
 /** 기존 리스트 보기. 상세 시트와 상태 변경은 여기에만 있다 */

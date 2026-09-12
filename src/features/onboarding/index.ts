@@ -28,6 +28,7 @@ export {
   TUTORIAL_WAIT_TIMEOUT_MS,
   emitTutorialActive,
   emitTutorialSwipe,
+  isTutorialActive,
 } from './tutorialSteps';
 export type { TutorialStep, TutorialActiveDetail, TutorialSwipeDetail } from './tutorialSteps';
 
