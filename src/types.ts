@@ -203,6 +203,10 @@ export type NotificationType =
   | 'application_viewed'
   | 'application_accepted'
   | 'application_rejected'
+  // 사장님이 지원자를 오른쪽으로 넘김 → 구직자에게
+  | 'employer_interested'
+  // 양쪽 다 관심 → 양쪽에게
+  | 'mutual_match'
   | 'system';
 
 /**
@@ -225,4 +229,34 @@ export type NotificationItem = {
   jobId: string | null;
   /** 알림을 그릴 때 필요한 공고 최소 정보. 공고가 지워졌으면 null */
   job: { id: string; storeName: string; imageUrl: string | null } | null;
+};
+
+/** 근무 요일. DB 의 work_days 와 user_availability.day 가 쓰는 값입니다. */
+export type Weekday = '월' | '화' | '수' | '목' | '금' | '일' | '토';
+
+export const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'] as const;
+
+/**
+ * 구직자가 일할 수 있는 시간. 요일 하나당 구간 하나입니다.
+ *
+ * 시각을 "13:00" 문자열이 아니라 자정부터의 분으로 둡니다 —
+ * 비교할 때마다 파싱하지 않아도 되고, 자정을 넘기는 구간(00:00~06:00)을
+ * end 에 1440 을 더하는 것만으로 처리할 수 있습니다. 780 = 13 * 60.
+ */
+export type Availability = {
+  day: Weekday;
+  startMin: number;
+  endMin: number;
+};
+
+/** 사장님이 지원자에게 보인 반응. right = 관심 있음, left = 보류 */
+export type OfferDirection = 'left' | 'right';
+
+/** offers 테이블 한 행. 사장님 1명당 구직자 1명에 1행입니다. */
+export type Offer = {
+  employerId: string;
+  seekerId: string;
+  jobId: string | null;
+  direction: OfferDirection;
+  createdAt: string;
 };
