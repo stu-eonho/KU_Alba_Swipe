@@ -41,3 +41,6 @@ _workspace_prev/
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# AI 에이전트 인수인계 · 진행 기록 (개인 도구, 팀 저장소에 올리지 않는다)
+_handoff/

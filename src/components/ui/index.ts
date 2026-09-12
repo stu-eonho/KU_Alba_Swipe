@@ -15,6 +15,12 @@ export type { IconButtonProps } from './IconButton';
 export { Input, Textarea } from './Input';
 export type { InputProps, TextareaProps } from './Input';
 
+export { Checkbox } from './Checkbox';
+export type { CheckboxProps } from './Checkbox';
+
+export { StepProgress } from './StepProgress';
+export type { StepProgressProps } from './StepProgress';
+
 export { Chip } from './Chip';
 export type { ChipProps } from './Chip';
 

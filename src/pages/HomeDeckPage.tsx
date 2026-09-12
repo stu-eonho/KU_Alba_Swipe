@@ -7,17 +7,25 @@
  * 화면 컨테이너에 overflow-hidden을 주는 이유: 카드가 화면 밖으로 날아갈 때
  * 가로 스크롤이 생기거나 드래그 중 페이지가 같이 움직이는 것을 막는다.
  */
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SearchX, WifiOff } from 'lucide-react';
 import { EmptyState, Skeleton, useToast } from '@/components/ui';
 import { ErrorBoundary } from '@/components/layout';
 import { CardStack, SwipeControls } from '@/features/deck';
+import { ExpandedCard } from '@/features/wishlist';
 import { useDeck } from '@/hooks/useDeck';
+import { useReviews } from '@/hooks/useReviews';
 import type { Job, SwipeDirection } from '@/types';
 
 export default function HomeDeckPage() {
   const { jobs, isLoading, isError, retry, swipe, swipeError } = useDeck();
   const toast = useToast();
+
+  /**
+   * 카드를 탭하면 열리는 상세 카드. 찜 화면과 **같은 ExpandedCard**를 쓴다.
+   * layoutId가 `card-${job.id}`로 같으므로 덱 카드 → 상세 카드 확대가 그대로 붙는다.
+   */
+  const [expandedJob, setExpandedJob] = useState<Job | null>(null);
 
   const handleSwipe = useCallback(
     (job: Job, direction: SwipeDirection) => {
@@ -61,11 +69,27 @@ export default function HomeDeckPage() {
         // 덱 전용 바운더리: 카드 렌더 오류가 앱 전체를 흰 화면으로 만들면 데모가 끝난다.
         // 덱만 폴백으로 바꾸고 탭바는 살려 둔다 (탭바는 라우터 MainLayout 소유).
         <ErrorBoundary inline>
-          <CardStack jobs={jobs} onSwipe={handleSwipe} />
+          <CardStack
+            jobs={jobs}
+            onSwipe={handleSwipe}
+            onCardTap={setExpandedJob}
+            expandedJobId={expandedJob?.id ?? null}
+          />
         </ErrorBoundary>
       )}
+
+      <ExpandedCardWithReviews job={expandedJob} onClose={() => setExpandedJob(null)} />
     </div>
   );
+}
+
+/**
+ * 리뷰는 카드가 열릴 때만 가져온다. useReviews는 jobId가 비면 요청하지 않으므로
+ * 닫힌 상태에서는 네트워크 호출이 없다. (WishlistPage와 같은 패턴)
+ */
+function ExpandedCardWithReviews({ job, onClose }: { job: Job | null; onClose: () => void }) {
+  const { reviews } = useReviews(job?.id ?? '');
+  return <ExpandedCard job={job} onClose={onClose} reviews={reviews} />;
 }
 
 /** <loading_state> 카드 모양 Skeleton 1장 + 컨트롤 버튼 비활성화 */

@@ -171,13 +171,14 @@
   .skeleton {
     position: relative;
     overflow: hidden;
-    background: var(--color-line);
+    /* DESIGN_Swipe.md: "#eff0f4-tone blocks at final dimensions" */
+    background: var(--color-search);
   }
   .skeleton::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, transparent, var(--color-subtle), transparent);
+    background: linear-gradient(90deg, transparent, var(--color-surface), transparent);
     animation: albaswipe-shimmer 1.4s linear infinite;
   }
 }

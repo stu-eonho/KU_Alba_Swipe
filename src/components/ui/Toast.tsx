@@ -4,7 +4,8 @@
  * ALBASWIPE_SPEC.md <global_layout><toast> + <error_handling><user_facing><toast>
  *  fixed, bottom calc(80px + env(safe-area-inset-bottom)), 좌우 16px, z-index 60
  *  최소 높이 48px, radius 12px, padding 12px 16px, 14px/500
- *  성공: bg-like-bg / text-like-deep · 에러: bg-nope-bg / text-nope · 3초
+ *  성공: 중립 면 + 잉크 · 에러: 흰 면 + error 보더/텍스트 · 3초
+ *  (플랫 시스템이라 배경 틴트로 구분할 수 없다. 헤어라인과 텍스트 색이 구분 장치다.)
  *  CRITICAL: 최대 1개. 새 토스트는 기존 것을 교체한다 (스택하지 않는다).
  *
  * 액션이 있으면(찜 해제 "되돌리기") 자동 소멸이 5초로 늘어난다 —
@@ -61,8 +62,8 @@ export function useToast(): ToastApi {
 }
 
 const VARIANT: Record<ToastVariant, string> = {
-  success: 'bg-like-bg text-like-deep',
-  error: 'bg-nope-bg text-nope',
+  success: 'bg-subtle text-ink border border-line',
+  error: 'bg-surface text-error border border-error',
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {

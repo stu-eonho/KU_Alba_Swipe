@@ -29,7 +29,7 @@ const VARIANT: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'bg-brand text-white active:bg-brand-dark',
   secondary: 'bg-surface text-brand border-[1.5px] border-brand active:bg-brand-soft',
   ghost: 'bg-transparent text-muted active:bg-subtle',
-  danger: 'bg-nope-bg text-nope active:bg-nope/10',
+  danger: 'bg-surface text-error border border-error active:bg-error/5',
 };
 
 // md 44px / lg 52px — 둘 다 터치 타겟 44px 하한을 자체 충족한다
