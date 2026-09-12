@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
-import { Button, EmptyState, Skeleton, Textarea, useToast } from '@/components/ui';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AlertCircle, Camera } from 'lucide-react';
+import { Button, EmptyState, Skeleton, Spinner, Textarea, useToast } from '@/components/ui';
+import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { useSeekerProfile } from '@/hooks/useSeekerProfile';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -27,6 +28,18 @@ const CATEGORIES = [
   '주방',
   '기타',
 ] as const;
+
+const AVATAR_SIZE = 72;
+const AVATAR_FALLBACK_ERROR = '사진을 올리지 못했어요. 다시 시도해 주세요';
+
+/** 훅이 던지는 값이 Error 가 아닐 수도 있어(StorageError) message 를 방어적으로 꺼낸다. */
+function messageOf(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return fallback;
+}
 
 type ExtendedProfile = SeekerProfile & {
   mbti?: Mbti | null;
@@ -90,6 +103,55 @@ function ProfileForm({
   );
   const [wageError, setWageError] = useState<string | null>(null);
 
+  // ---- 아바타 업로드 --------------------------------------------------
+  const { upload, isUploading } = useAvatarUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  // state 는 비동기라 해제 시점에 최신 값을 못 읽는다. 해제 대상은 ref 로 따로 들고 있는다.
+  const objectUrlRef = useRef<string | null>(null);
+
+  /** objectURL 교체·해제의 단일 통로. 새 URL 을 세우기 전에 이전 것을 반드시 revoke 한다. */
+  const replaceObjectUrl = useCallback((next: string | null) => {
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    objectUrlRef.current = next;
+    setPreviewUrl(next);
+  }, []);
+
+  // 업로드 도중 화면을 떠나도 blob 이 남지 않도록 언마운트에서 한 번 더 해제한다.
+  useEffect(
+    () => () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    },
+    [],
+  );
+
+  const avatarUrl = previewUrl ?? uploadedUrl ?? profile?.avatarUrl ?? null;
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // 같은 파일을 다시 골라도 change 가 또 발생하도록 값을 비운다.
+    event.target.value = '';
+    if (!file) return;
+
+    replaceObjectUrl(URL.createObjectURL(file));
+    try {
+      // A 가 URL 에 ?v=timestamp 를 붙여 돌려준다. 여기서 캐시 무효화를 또 하지 않는다.
+      const url = await upload(file);
+      setUploadedUrl(url);
+      toast.success('사진을 변경했어요');
+    } catch (error) {
+      toast.error(messageOf(error, AVATAR_FALLBACK_ERROR));
+    } finally {
+      // 성공이면 서버 URL 로, 실패면 원래 사진으로 돌아가며 blob 을 해제한다.
+      replaceObjectUrl(null);
+    }
+  };
+  // ---------------------------------------------------------------------
+
   const toggleInterest = (category: string) => {
     setInterests((current) =>
       current.includes(category)
@@ -140,17 +202,43 @@ function ProfileForm({
   return (
     <div className="mx-auto w-full max-w-[480px] px-4 py-5">
       <section className="border-line-soft flex items-center gap-4 border-b pb-5">
-        <ProfileAvatar nickname={nickname} avatarUrl={profile?.avatarUrl} />
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            aria-label="프로필 사진 변경"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="relative block rounded-full"
+            style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
+          >
+            <ProfileAvatar nickname={nickname} avatarUrl={avatarUrl} size={AVATAR_SIZE} />
+            {isUploading && (
+              <span className="bg-scrim text-surface absolute inset-0 grid place-items-center rounded-full">
+                <Spinner size={20} label="사진 올리는 중" />
+              </span>
+            )}
+            <span
+              aria-hidden
+              className="bg-ink text-surface border-surface absolute right-0 bottom-0 grid size-6 place-items-center rounded-full border-2"
+            >
+              <Camera size={12} />
+            </span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            aria-label="프로필 사진 변경"
+            className="sr-only"
+            onChange={handleAvatarChange}
+          />
+        </div>
         <div className="min-w-0 flex-1">
           <h2 className="clamp-1 text-[18px] font-semibold text-ink">{nickname}</h2>
           <p className="mt-1 text-[13px] text-faint">구직자 프로필</p>
-          <button
-            type="button"
-            disabled
-            className="mt-2 min-h-11 text-[13px] font-semibold text-faint"
-          >
-            사진 변경 · 준비 중
-          </button>
+          <p className="mt-1 text-[13px] text-faint">
+            {isUploading ? '사진을 올리는 중이에요' : '사진을 눌러 변경할 수 있어요'}
+          </p>
         </div>
       </section>
 

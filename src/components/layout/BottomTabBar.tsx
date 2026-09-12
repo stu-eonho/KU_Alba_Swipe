@@ -58,7 +58,12 @@ export function BottomTabBar({ role = 'seeker', wishlistCount, className }: Bott
     >
       <ul className="flex h-16 items-stretch">
         {tabs.map(({ to, label, Icon }) => (
-          <li key={to} className="flex-1">
+          /* data-tour="tab-wishlist" — 인터랙티브 튜토리얼 스포트라이트 앵커 (PHASE6 B-3) */
+          <li
+            key={to}
+            data-tour={to === '/wishlist' ? 'tab-wishlist' : undefined}
+            className="flex-1"
+          >
             <NavLink
               to={to}
               end={to === '/'}

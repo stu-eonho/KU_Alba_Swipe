@@ -21,7 +21,8 @@ import { AppShell, RequireAuth, RequireRole, useSmartBack } from '@/components/l
 import { useWishlist } from '@/hooks/useWishlist';
 import { useAuth } from '@/lib/auth-context';
 import { Tutorial } from '@/features/onboarding';
-import { EmployerJobsPlaceholder } from '@/features/employer-ui';
+import EmployerJobsPage from '@/pages/EmployerJobsPage';
+import EmployerJobFormPage from '@/pages/EmployerJobFormPage';
 import { ProfileEditor } from '@/features/profile';
 import { AvailabilityPage } from '@/features/availability';
 import { NotificationBell } from '@/features/notifications';
@@ -176,7 +177,7 @@ export const router = createBrowserRouter([
               },
               {
                 path: '/employer/jobs',
-                element: <EmployerJobsPlaceholder />,
+                element: <EmployerJobsPage />,
                 handle: { title: '내 공고' },
               },
             ],
@@ -192,6 +193,17 @@ export const router = createBrowserRouter([
             element: <RequireRole role="seeker" redirectTo="/employer/applicants" />,
             children: [
               { path: '/apply/:jobId', element: <ApplyPage />, handle: { title: '지원하기' } },
+            ],
+          },
+          {
+            // 공고 작성은 긴 폼이라 탭바를 숨기고 뒤로가기만 둔다.
+            element: <RequireRole role="employer" redirectTo="/" />,
+            children: [
+              {
+                path: '/employer/jobs/new',
+                element: <EmployerJobFormPage />,
+                handle: { title: '공고 작성' },
+              },
             ],
           },
         ],

@@ -1,22 +1,39 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CalendarClock, ChevronRight, ClipboardList, Heart, LogOut, PlayCircle, RotateCcw, UserRound } from 'lucide-react';
+import { ConfirmDialog as UiConfirmDialog, useToast as useGlobalToast } from '@/components/ui';
 import { Tutorial } from '@/features/onboarding';
 import { resetTutorial } from '@/features/onboarding/tutorialStorage';
 import { ConfirmDialog } from '@/features/settings/ConfirmDialog';
 import { Toast, useToast } from '@/features/settings/Toast';
+import { useDeleteAccount } from '@/hooks/useDeleteAccount';
 import { useResetSwipes, useSwipeStats } from '@/hooks/useSwipeHistory';
 import { useAuth } from '@/lib/auth-context';
 
 const APP_VERSION = 'v0.1.0';
-type OpenDialog = 'reset' | 'signOut' | null;
+type OpenDialog = 'reset' | 'signOut' | 'deleteAccount' | null;
+
+const DELETE_FALLBACK = '탈퇴하지 못했어요. 다시 시도해 주세요';
+
+/** 훅이 던지는 값이 Error 가 아닐 수도 있어(PostgrestError) message 를 방어적으로 꺼낸다. */
+function messageOf(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return fallback;
+}
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { stats } = useSwipeStats();
   const { reset, isResetting } = useResetSwipes();
+  const { deleteAccount, isDeleting } = useDeleteAccount();
   const { toast, showToast } = useToast();
+  // 탈퇴하면 이 화면이 즉시 언마운트되므로(로그아웃 → user null → /login) 성공 토스트는
+  // 화면에 매달린 로컬 토스트가 아니라 전역 ToastProvider 로 띄운다.
+  const globalToast = useGlobalToast();
   const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
   const [showTutorial, setShowTutorial] = useState(false);
 
@@ -38,6 +55,19 @@ export default function SettingsPage() {
   async function handleSignOut() {
     await signOut();
     navigate('/login', { replace: true });
+  }
+
+  async function handleDeleteAccount() {
+    try {
+      await deleteAccount();
+      setOpenDialog(null);
+      globalToast.success('탈퇴가 완료됐어요');
+      navigate('/login', { replace: true });
+    } catch (error) {
+      // 실패해도 화면은 그대로 두고 다이얼로그만 닫는다.
+      setOpenDialog(null);
+      globalToast.error(messageOf(error, DELETE_FALLBACK));
+    }
   }
 
   function replayTutorial() {
@@ -126,6 +156,17 @@ export default function SettingsPage() {
         />
       </section>
 
+      {/* 실수로 누르기 어렵도록 메뉴 행이 아닌 작은 텍스트 버튼. 터치 타겟은 44px 유지. */}
+      <div className="mt-6 flex justify-center">
+        <button
+          type="button"
+          onClick={() => setOpenDialog('deleteAccount')}
+          className="min-h-11 px-4 text-[13px] text-faint underline underline-offset-2"
+        >
+          회원 탈퇴
+        </button>
+      </div>
+
       <p className="pb-4 text-center text-[12px] text-faint">AlbaSwipe {APP_VERSION}</p>
 
       {openDialog === 'reset' && (
@@ -149,6 +190,20 @@ export default function SettingsPage() {
           onCancel={() => setOpenDialog(null)}
         />
       )}
+
+      {/* 취소가 기본 포커스 · Escape · 백드롭 탭까지 ConfirmDialog 가 처리한다. */}
+      <UiConfirmDialog
+        open={openDialog === 'deleteAccount'}
+        title="정말 탈퇴하시겠어요?"
+        description="찜한 공고, 지원 내역, 프로필이 모두 삭제됩니다. 되돌릴 수 없어요."
+        confirmLabel="탈퇴하기"
+        destructive
+        loading={isDeleting}
+        onConfirm={handleDeleteAccount}
+        onCancel={() => {
+          if (!isDeleting) setOpenDialog(null);
+        }}
+      />
 
       <Tutorial userId={user.id} open={showTutorial} onClose={() => setShowTutorial(false)} />
       <Toast toast={toast} />

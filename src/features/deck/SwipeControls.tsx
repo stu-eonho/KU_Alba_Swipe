@@ -28,7 +28,11 @@ const PRESS = 'active:scale-[0.88]!';
 
 export function SwipeControls({ onNope, onLike, disabled = false, className }: SwipeControlsProps) {
   return (
-    <div className={clsx('mt-6 flex items-center justify-center gap-6', className)}>
+    /* data-tour="controls" — 인터랙티브 튜토리얼 스포트라이트 앵커 (PHASE6 B-3) */
+    <div
+      data-tour="controls"
+      className={clsx('mt-6 flex items-center justify-center gap-6', className)}
+    >
       <IconButton
         label="관심 없음"
         size={64}

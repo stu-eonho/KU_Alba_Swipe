@@ -169,7 +169,15 @@ export function CardStack({
   return (
     <div className={clsx('flex flex-col items-center', className)}>
       {/* 영역: width calc(100% - 32px), 최대 448px, aspect 3/4, 상단 마진 16px, 중앙 정렬 */}
-      <div className="relative mx-auto mt-4 aspect-[3/4] w-[calc(100%-32px)] max-w-[448px]">
+      {/*
+        data-tour="deck" — 인터랙티브 튜토리얼 스포트라이트 앵커 (PHASE6 B-3).
+        CRITICAL: 앵커는 카드 개별이 아니라 이 **스택 영역**에 건다. 카드는 스와이프마다
+        교체되므로 개별 카드에 걸면 앵커가 흔들린다. 이 상자는 비어 있어도 크기가 같다.
+      */}
+      <div
+        data-tour="deck"
+        className="relative mx-auto mt-4 aspect-[3/4] w-[calc(100%-32px)] max-w-[448px]"
+      >
         {showEmpty ? (
           <div className="flex h-full items-center justify-center">
             <EmptyState

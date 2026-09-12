@@ -14,6 +14,11 @@ import { EmptyState, Skeleton, useToast } from '@/components/ui';
 import { ErrorBoundary } from '@/components/layout';
 import { CardStack, SwipeControls } from '@/features/deck';
 import { ExpandedCard } from '@/features/wishlist';
+import {
+  TUTORIAL_ACTIVE_EVENT,
+  emitTutorialSwipe,
+  type TutorialActiveDetail,
+} from '@/features/onboarding';
 import { useDeck } from '@/hooks/useDeck';
 import { useReviews } from '@/hooks/useReviews';
 import type { Job, SwipeDirection } from '@/types';
@@ -34,11 +39,29 @@ export default function HomeDeckPage() {
    */
   const [expandedJob, setExpandedJob] = useState<Job | null>(null);
 
+  /**
+   * 튜토리얼이 떠 있는 동안에는 카드 탭(상세 열기)을 막는다.
+   * 인터랙티브 튜토리얼은 z-80, 상세 카드는 z-50이라 상세가 열리면 스크림 뒤에 깔려
+   * 무슨 일이 일어난 건지 알 수 없게 된다. 스와이프는 그대로 열어 둔다 — 그게 과제다.
+   */
+  const [tutorialActive, setTutorialActive] = useState(false);
+  useEffect(() => {
+    const onTutorial = (event: Event) => {
+      const detail = (event as CustomEvent<TutorialActiveDetail>).detail;
+      setTutorialActive(Boolean(detail?.active));
+    };
+    window.addEventListener(TUTORIAL_ACTIVE_EVENT, onTutorial);
+    return () => window.removeEventListener(TUTORIAL_ACTIVE_EVENT, onTutorial);
+  }, []);
+
   const handleSwipe = useCallback(
     (job: Job, direction: SwipeDirection) => {
       // CRITICAL: 낙관적. 카드는 이미 날아갔다. useDeck이 ['jobs'] 캐시에서 빼준다.
       // 실패해도 되돌리지 않는다 — 이미 다음 카드를 보고 있다.
       swipe(job.id, direction);
+      // 인터랙티브 튜토리얼의 "실제로 밀어보기" 단계가 이 신호 하나만 듣는다.
+      // 새 제스처 이벤트를 만들지 않는다 — useSwipeGesture는 손대지 않았다.
+      emitTutorialSwipe(direction);
     },
     [swipe],
   );
@@ -91,7 +114,7 @@ export default function HomeDeckPage() {
           <CardStack
             jobs={jobs}
             onSwipe={handleSwipe}
-            onCardTap={setExpandedJob}
+            onCardTap={tutorialActive ? undefined : setExpandedJob}
             expandedJobId={expandedJob?.id ?? null}
             // 안내 줄이 있으면 카드 스택의 mt-4(16px)를 8px로 당긴다
             className={hasNotice ? '-mt-2' : undefined}
