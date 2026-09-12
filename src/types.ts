@@ -43,6 +43,16 @@ export type Job = {
   imageUrl: string | null;
   /** 공고 주인(사업자). 시드 공고는 데모 사업자 계정으로 몰아줍니다 */
   employerId: string | null;
+  /**
+   * "이런 분을 찾아요" — 사장님이 고른 성격 키워드.
+   *
+   * 구직자 프로필의 personalityTraits 와 **같은 목록**(PERSONALITY_TRAITS)을 씁니다.
+   * 따로 만들면 양쪽 어휘가 갈려서 매칭 이야기가 성립하지 않습니다.
+   *
+   * optional 인 이유는 rollout 안전입니다. 마이그레이션 전 행과, 아직 이 필드를
+   * 매핑하지 않은 브랜치의 코드가 그대로 컴파일돼야 합니다.
+   */
+  wantedTraits?: PersonalityTrait[];
 };
 
 /** 공고별 리뷰. 카드 뒷면에 최대 3개 노출. 시드 전용(앱에서 작성 불가). */
