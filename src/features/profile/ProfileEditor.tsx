@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, RefreshCw, Settings } from 'lucide-react';
-import {
-  Badge,
-  Button,
-  EmptyState,
-  IconButton,
-  Skeleton,
-  Textarea,
-  useToast,
-} from '@/components/ui';
-import { useMyApplications } from '@/hooks/useApply';
+import { AlertCircle } from 'lucide-react';
+import { Button, EmptyState, Skeleton, Textarea, useToast } from '@/components/ui';
 import { useSeekerProfile } from '@/hooks/useSeekerProfile';
 import { useAuth } from '@/lib/auth-context';
-import type { ApplicationStatus, SeekerProfile } from '@/types';
+import {
+  MAX_PERSONALITY_TRAITS,
+  MBTI_VALUES,
+  PERSONALITY_TRAITS,
+  type Mbti,
+  type PersonalityTrait,
+  type SeekerProfile,
+} from '@/types';
 import { ProfileAvatar } from './ProfileAvatar';
 
 const CATEGORIES = [
@@ -31,11 +27,9 @@ const CATEGORIES = [
   '기타',
 ] as const;
 
-const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  applied: '지원 완료',
-  viewed: '열람',
-  accepted: '채용 확정',
-  rejected: '지원 종료',
+type ExtendedProfile = SeekerProfile & {
+  mbti?: Mbti | null;
+  personalityTraits?: PersonalityTrait[];
 };
 
 export function ProfileEditor() {
@@ -43,7 +37,6 @@ export function ProfileEditor() {
   const profileQuery = useSeekerProfile();
 
   if (!user) return null;
-
   if (profileQuery.isLoading) return <ProfileSkeleton />;
 
   if (profileQuery.isError) {
@@ -63,7 +56,7 @@ export function ProfileEditor() {
     <ProfileForm
       key={profileQuery.profile?.updatedAt ?? user.id}
       nickname={user.nickname}
-      profile={profileQuery.profile}
+      profile={profileQuery.profile as ExtendedProfile | null}
       save={profileQuery.save}
       isSaving={profileQuery.isSaving}
     />
@@ -77,19 +70,17 @@ function ProfileForm({
   isSaving,
 }: {
   nickname: string;
-  profile: SeekerProfile | null;
+  profile: ExtendedProfile | null;
   save: ReturnType<typeof useSeekerProfile>['save'];
   isSaving: boolean;
 }) {
   const toast = useToast();
-  const queryClient = useQueryClient();
-  const {
-    applications,
-    isLoading: applicationsLoading,
-    isError: applicationsError,
-  } = useMyApplications();
   const [intro, setIntro] = useState(profile?.intro ?? '');
   const [experience, setExperience] = useState(profile?.experience ?? '');
+  const [mbti, setMbti] = useState<Mbti | ''>(profile?.mbti ?? '');
+  const [personalityTraits, setPersonalityTraits] = useState<PersonalityTrait[]>(
+    profile?.personalityTraits ?? [],
+  );
   const [interests, setInterests] = useState<string[]>(profile?.interests ?? []);
   const [desiredWage, setDesiredWage] = useState(
     profile?.desiredWage !== null && profile?.desiredWage !== undefined
@@ -106,24 +97,39 @@ function ProfileForm({
     );
   };
 
+  const toggleTrait = (trait: PersonalityTrait) => {
+    setPersonalityTraits((current) => {
+      if (current.includes(trait)) return current.filter((item) => item !== trait);
+      if (current.length >= MAX_PERSONALITY_TRAITS) return current;
+      return [...current, trait];
+    });
+  };
+
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    const trimmedWage = desiredWage.trim();
-    const parsedWage = trimmedWage ? Number(trimmedWage) : null;
-    if (parsedWage !== null && (!Number.isInteger(parsedWage) || parsedWage < 0)) {
-      setWageError('희망 시급은 0 이상의 숫자로 입력해 주세요');
+    const parsedWage = desiredWage ? Number(desiredWage) : null;
+    if (
+      parsedWage !== null &&
+      (!Number.isInteger(parsedWage) || parsedWage < 0 || parsedWage > 1_000_000)
+    ) {
+      setWageError('희망 시급은 0원부터 1,000,000원 사이로 입력해 주세요');
       return;
     }
 
     setWageError(null);
     try {
-      await save({
+      // A의 확장 patch가 합쳐지면 추가 필드도 저장된다. 변수로 넘겨 기존 Phase 2의
+      // 좁은 타입과도 병렬 브랜치에서 호환되게 한다.
+      const patch = {
         nickname,
         intro: intro.trim() || null,
         experience: experience.trim() || null,
+        mbti: mbti || null,
+        personalityTraits,
         interests,
         desiredWage: parsedWage,
-      });
+      };
+      await save(patch);
       toast.success('프로필을 저장했어요');
     } catch {
       toast.error('프로필을 저장하지 못했어요. 다시 시도해 주세요');
@@ -166,6 +172,57 @@ function ProfileForm({
           placeholder="근무했던 곳과 맡았던 일을 적어주세요"
         />
 
+        <div>
+          <label
+            htmlFor="profile-mbti"
+            className="mb-1.5 block text-[14px] font-semibold text-muted"
+          >
+            MBTI
+          </label>
+          <select
+            id="profile-mbti"
+            value={mbti}
+            onChange={(event) => setMbti(event.target.value as Mbti | '')}
+            className="h-[52px] w-full rounded-field border border-line bg-surface px-4 text-[16px] text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand/15"
+          >
+            <option value="">선택 안 함</option>
+            {MBTI_VALUES.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+        </div>
+
+        <fieldset>
+          <div className="mb-2 flex items-center justify-between">
+            <legend className="text-[14px] font-semibold text-muted">나를 나타내는 성격</legend>
+            <span className="tabular text-[12px] text-faint">
+              {personalityTraits.length} / {MAX_PERSONALITY_TRAITS}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {PERSONALITY_TRAITS.map((trait) => {
+              const selected = personalityTraits.includes(trait);
+              const disabled = !selected && personalityTraits.length >= MAX_PERSONALITY_TRAITS;
+              return (
+                <button
+                  key={trait}
+                  type="button"
+                  aria-pressed={selected}
+                  disabled={disabled}
+                  onClick={() => toggleTrait(trait)}
+                  className={
+                    selected
+                      ? 'min-h-11 rounded-pill border border-ink bg-brand-soft px-4 text-[14px] font-semibold text-ink'
+                      : 'min-h-11 rounded-pill border border-line bg-surface px-4 text-[14px] text-muted disabled:opacity-40'
+                  }
+                >
+                  {trait}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
         <fieldset>
           <legend className="mb-2 text-[14px] font-semibold text-muted">관심 직종</legend>
           <div className="flex flex-wrap gap-2">
@@ -200,13 +257,12 @@ function ProfileForm({
           <div className="relative">
             <input
               id="desired-wage"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={0}
-              step={100}
+              pattern="[0-9]*"
               value={desiredWage}
               onChange={(event) => {
-                setDesiredWage(event.target.value);
+                setDesiredWage(event.target.value.replace(/[^0-9]/g, ''));
                 setWageError(null);
               }}
               aria-invalid={Boolean(wageError)}
@@ -229,66 +285,6 @@ function ProfileForm({
           프로필 저장
         </Button>
       </form>
-
-      <section className="border-line-soft border-t py-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[16px] font-semibold text-ink">내 지원 현황</h2>
-          <div className="flex items-center gap-1">
-            <span className="text-[12px] text-faint">{applications.length}건</span>
-            <IconButton
-              label="지원 현황 새로고침"
-              onClick={() =>
-                void queryClient.refetchQueries({ queryKey: ['applications', 'mine'] })
-              }
-            >
-              <RefreshCw size={17} strokeWidth={1.75} aria-hidden />
-            </IconButton>
-          </div>
-        </div>
-        {applicationsLoading ? (
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-16" />
-            <Skeleton className="h-16" />
-          </div>
-        ) : applicationsError ? (
-          <p
-            role="alert"
-            className="rounded-field bg-subtle px-4 py-5 text-center text-[14px] text-error"
-          >
-            지원 현황을 불러오지 못했어요
-          </p>
-        ) : applications.length === 0 ? (
-          <p className="rounded-field bg-subtle px-4 py-5 text-center text-[14px] text-muted">
-            아직 지원한 공고가 없어요
-          </p>
-        ) : (
-          <ul className="divide-y divide-line-soft border-y border-line-soft">
-            {applications.map((application) => (
-              <li key={application.id} className="flex min-h-16 items-center gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="clamp-1 text-[14px] font-semibold text-ink">
-                    {application.job.storeName}
-                  </p>
-                  <p className="mt-1 text-[12px] text-faint">
-                    {new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium' }).format(
-                      new Date(application.createdAt),
-                    )}
-                  </p>
-                </div>
-                <Badge>{STATUS_LABEL[application.status]}</Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <Link
-        to="/settings"
-        className="border-line-soft flex min-h-11 items-center justify-center gap-2 border-t py-4 text-[14px] font-semibold text-muted"
-      >
-        <Settings size={18} strokeWidth={1.75} aria-hidden />
-        계정 및 설정
-      </Link>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button, Chip, IconButton } from '@/components/ui';
 import { ProfileAvatar } from '@/features/profile';
-import type { ApplicantEntry, ApplicationStatus } from '@/types';
+import type { ApplicantEntry, ApplicationStatus, Mbti, PersonalityTrait } from '@/types';
 import { APPLICATION_STATUS_LABEL } from './applicationPresentation';
 
 const FOCUSABLE =
@@ -58,7 +58,12 @@ export function ApplicantDetail({
   }, [openEntryId, onClose]);
 
   if (!entry) return null;
-  const profile = entry.seeker.profile;
+  const profile = entry.seeker.profile as
+    | (NonNullable<ApplicantEntry['seeker']['profile']> & {
+        mbti?: Mbti | null;
+        personalityTraits?: PersonalityTrait[];
+      })
+    | null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -100,6 +105,26 @@ export function ApplicantDetail({
 
           <DetailSection title="자기소개" text={profile?.intro} empty="작성한 자기소개가 없어요" />
           <DetailSection title="경력" text={profile?.experience} empty="등록한 경력이 없어요" />
+
+          <section className="border-line-soft mt-5 border-t pt-5">
+            <h3 className="text-[14px] font-semibold text-ink">MBTI</h3>
+            <p className="mt-2 text-[14px] text-body">{profile?.mbti ?? '선택 안 함'}</p>
+          </section>
+
+          <section className="border-line-soft mt-5 border-t pt-5">
+            <h3 className="text-[14px] font-semibold text-ink">성격 키워드</h3>
+            {profile?.personalityTraits?.length ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {profile.personalityTraits.map((trait) => (
+                  <Chip key={trait} size="md">
+                    {trait}
+                  </Chip>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-[14px] text-faint">선택한 성격 키워드가 없어요</p>
+            )}
+          </section>
 
           <section className="border-line-soft mt-5 border-t pt-5">
             <h3 className="text-[14px] font-semibold text-ink">관심 직종</h3>

@@ -18,6 +18,7 @@ import clsx from 'clsx';
 import { Clock, MapPin, Star, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Chip, IconButton } from '@/components/ui';
+import { useApply } from '@/hooks/useApply';
 import type { Job, Review } from '@/types';
 import { formatWage } from './jobPresentation';
 
@@ -33,6 +34,8 @@ export type BackFaceProps = {
   onClose?: () => void;
   /** 지원하기를 누르기 직전에 실행. 보통 확대 카드를 닫는다 */
   onBeforeApply?: () => void;
+  /** 지원 상세처럼 읽기 전용으로 쓸 때 false. 기본값은 기존과 같은 true */
+  showApply?: boolean;
   className?: string;
 };
 
@@ -59,14 +62,15 @@ function ReviewCard({ review }: { review: Review }) {
   );
 }
 
-export function BackFace({ job, reviews, onClose, onBeforeApply, className }: BackFaceProps) {
-  const navigate = useNavigate();
+export function BackFace({
+  job,
+  reviews,
+  onClose,
+  onBeforeApply,
+  showApply = true,
+  className,
+}: BackFaceProps) {
   const list = reviews ?? [];
-
-  const handleApply = () => {
-    onBeforeApply?.();
-    navigate(`/apply/${job.id}`);
-  };
 
   return (
     <div
@@ -93,9 +97,7 @@ export function BackFace({ job, reviews, onClose, onBeforeApply, className }: Ba
             <span className="tabular text-ink text-[15px] leading-[1.3] font-semibold">
               {job.rating.toFixed(1)}
             </span>
-            <span className="text-faint text-[13px] leading-[1.3]">
-              리뷰 {job.reviewCount}개
-            </span>
+            <span className="text-faint text-[13px] leading-[1.3]">리뷰 {job.reviewCount}개</span>
           </div>
 
           <p className="tabular text-ink text-[18px] leading-[1.2] font-semibold">
@@ -159,11 +161,49 @@ export function BackFace({ job, reviews, onClose, onBeforeApply, className }: Ba
         </section>
       </div>
 
-      <div className="border-line-soft bg-surface shrink-0 border-t p-4">
-        <Button variant="primary" size="lg" fullWidth onClick={handleApply}>
+      {showApply && <ApplicationFooter job={job} onBeforeApply={onBeforeApply} />}
+    </div>
+  );
+}
+
+function ApplicationFooter({ job, onBeforeApply }: { job: Job; onBeforeApply?: () => void }) {
+  const navigate = useNavigate();
+  const { existingApplication, isChecking, isCheckError, retryCheck } = useApply(job.id);
+
+  const go = (to: string) => {
+    onBeforeApply?.();
+    navigate(to);
+  };
+
+  return (
+    <div className="border-line-soft bg-surface shrink-0 border-t p-4">
+      {isChecking ? (
+        <Button size="lg" fullWidth disabled>
+          지원 여부 확인 중
+        </Button>
+      ) : isCheckError ? (
+        <Button variant="secondary" size="lg" fullWidth onClick={() => void retryCheck()}>
+          다시 확인
+        </Button>
+      ) : existingApplication ? (
+        <div className="flex flex-col gap-2">
+          <Button size="lg" fullWidth disabled>
+            지원 완료
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            fullWidth
+            onClick={() => go(`/settings/applications/${existingApplication.id}`)}
+          >
+            지원 내용 보기
+          </Button>
+        </div>
+      ) : (
+        <Button size="lg" fullWidth onClick={() => go(`/apply/${job.id}`)}>
           지원하기
         </Button>
-      </div>
+      )}
     </div>
   );
 }

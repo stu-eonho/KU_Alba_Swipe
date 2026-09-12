@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Inbox, WifiOff } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { EmptyState, Skeleton } from '@/components/ui';
 import { ApplicantCard, ApplicantDetail } from '@/features/employer-ui';
 import { useEmployerApplicants } from '@/hooks/useEmployerApplicants';
@@ -7,7 +8,12 @@ import type { ApplicantEntry, ApplicationStatus } from '@/types';
 
 export default function EmployerApplicantsPage() {
   const { applications, isLoading, isError, retry, setStatus } = useEmployerApplicants();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [manualSelectedId, setManualSelectedId] = useState<string | null>(null);
+  const requestedId = searchParams.get('applicationId');
+  const selectedId =
+    manualSelectedId ??
+    (requestedId && applications.some((entry) => entry.id === requestedId) ? requestedId : null);
   const selected = applications.find((entry) => entry.id === selectedId) ?? null;
 
   const handleViewed = useCallback(
@@ -18,7 +24,14 @@ export default function EmployerApplicantsPage() {
   const handleSetStatus = (applicationId: string, status: ApplicationStatus) => {
     setStatus(applicationId, status);
   };
-  const handleClose = useCallback(() => setSelectedId(null), []);
+  const handleClose = useCallback(() => {
+    setManualSelectedId(null);
+    if (searchParams.has('applicationId')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('applicationId');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   if (isLoading) {
     return (
@@ -63,7 +76,7 @@ export default function EmployerApplicantsPage() {
           <li key={entry.id}>
             <ApplicantCard
               entry={entry}
-              onOpen={(next) => setSelectedId(next.id)}
+              onOpen={(next) => setManualSelectedId(next.id)}
               onViewed={handleViewed}
             />
           </li>

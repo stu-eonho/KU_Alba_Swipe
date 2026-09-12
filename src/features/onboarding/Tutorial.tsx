@@ -21,7 +21,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { X } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui';
 import { TUTORIAL_SLIDES } from './tutorialSlides';
-import { hasSeenTutorial, markTutorialSeen, resetTutorial } from './tutorialStorage';
+import { hasSeenTutorial, markTutorialSeen, resetTutorialForDev } from './tutorialStorage';
 
 /* DESIGN_Swipe.md Motion & Easing — globals.css 의 --ease-standard / --ease-exit 와 같은 값 */
 const ENTER_SEC = 0.2;
@@ -36,6 +36,8 @@ const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export type TutorialProps = {
+  /** 튜토리얼 완료 상태는 브라우저가 아니라 로그인 사용자별로 저장한다. */
+  userId: string;
   /**
    * 생략하면 localStorage 로 스스로 판단한다(기본 사용법 — 라우터에서 `<Tutorial />`).
    * 값을 주면 제어 컴포넌트가 된다. 설정의 "튜토리얼 다시 보기" 같은 데서 쓴다.
@@ -45,10 +47,10 @@ export type TutorialProps = {
   onClose?: () => void;
 };
 
-export function Tutorial({ open, onClose }: TutorialProps) {
+export function Tutorial({ userId, open, onClose }: TutorialProps) {
   const isControlled = open !== undefined;
   // 최초 렌더에서 한 번만 읽는다. 렌더마다 localStorage 를 때리지 않는다.
-  const [selfOpen, setSelfOpen] = useState(() => !hasSeenTutorial());
+  const [selfOpen, setSelfOpen] = useState(() => !hasSeenTutorial(userId));
   const visible = isControlled ? open : selfOpen;
 
   const [index, setIndex] = useState(0);
@@ -61,11 +63,11 @@ export function Tutorial({ open, onClose }: TutorialProps) {
   const isLast = index === TUTORIAL_SLIDES.length - 1;
 
   const close = useCallback(() => {
-    markTutorialSeen();
+    markTutorialSeen(userId);
     setIndex(0);
     if (!isControlled) setSelfOpen(false);
     onClose?.();
-  }, [isControlled, onClose]);
+  }, [isControlled, onClose, userId]);
 
   // 인라인 화살표 함수를 넘겨도 keydown 이펙트가 재실행되지 않도록 ref 에 담는다
   const closeRef = useRef(close);
@@ -83,7 +85,7 @@ export function Tutorial({ open, onClose }: TutorialProps) {
   /** 데모 리허설용: 개발 빌드에서 콘솔에 `__albaswipeResetTutorial()` 을 노출한다. */
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    window.__albaswipeResetTutorial = resetTutorial;
+    window.__albaswipeResetTutorial = resetTutorialForDev;
     return () => {
       delete window.__albaswipeResetTutorial;
     };
