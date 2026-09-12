@@ -17,7 +17,7 @@
  *                값을 바꾸면 애니메이션이 에러 없이 조용히 죽는다.
  */
 import clsx from 'clsx';
-import { X } from 'lucide-react';
+import { Star, X } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Chip, IconButton } from '@/components/ui';
 import type { Job } from '@/types';
@@ -80,9 +80,23 @@ export function GridCard({
               {job.category}
             </Chip>
           </div>
-          <p className="tabular text-ink text-[18px] leading-[1.2] font-semibold">
-            {formatWage(job.hourlyWage)}
-          </p>
+          {/*
+            시급 옆 별점. 격자 앞면의 4개 정보 제한은 그대로다 — 별점은 새 정보 줄이 아니라
+            시급 줄에 붙는 보조 지표이고, 리뷰가 없으면(0.0 (0)) 아예 그리지 않는다.
+          */}
+          <div className="flex items-baseline gap-1.5">
+            <p className="tabular text-ink text-[18px] leading-[1.2] font-semibold">
+              {formatWage(job.hourlyWage)}
+            </p>
+            {job.rating > 0 && job.reviewCount > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Star size={12} strokeWidth={0} fill="currentColor" className="text-star" />
+                <span className="tabular text-ink text-[12px] leading-none font-semibold">
+                  {job.rating.toFixed(1)}
+                </span>
+              </span>
+            )}
+          </div>
           <p className="clamp-2 text-faint text-[12px] leading-[1.4]">{job.summary}</p>
         </div>
       </div>
@@ -91,7 +105,11 @@ export function GridCard({
       <button
         type="button"
         onClick={() => onClick?.(job)}
-        aria-label={`${jobAriaLabel(job)} 상세 보기`}
+        aria-label={
+          job.rating > 0 && job.reviewCount > 0
+            ? `${jobAriaLabel(job)}, 평점 ${job.rating.toFixed(1)}점, 리뷰 ${job.reviewCount}개 상세 보기`
+            : `${jobAriaLabel(job)} 상세 보기`
+        }
         className="rounded-tile absolute inset-0 z-10 h-full w-full"
       />
 
