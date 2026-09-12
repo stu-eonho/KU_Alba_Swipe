@@ -9,7 +9,7 @@
  * 그래서 여기서 권한을 다시 검사하지 않습니다.
  */
 import { supabase } from '@/lib/supabase';
-import type { SeekerProfile } from '@/types';
+import type { Mbti, PersonalityTrait, SeekerProfile } from '@/types';
 
 type SeekerProfileRow = {
   user_id: string;
@@ -21,6 +21,9 @@ type SeekerProfileRow = {
   avatar_url: string | null;
   resume_url: string | null;
   updated_at: string;
+  // Phase 3 마이그레이션 전에 만들어진 행에는 이 두 컬럼이 없습니다.
+  mbti?: string | null;
+  personality_traits?: string[] | null;
 };
 
 export function toSeekerProfile(row: SeekerProfileRow): SeekerProfile {
@@ -34,6 +37,9 @@ export function toSeekerProfile(row: SeekerProfileRow): SeekerProfile {
     avatarUrl: row.avatar_url,
     resumeUrl: row.resume_url,
     updatedAt: row.updated_at,
+    // 마이그레이션 전 행, 프로필 없는 사용자, 새 행 세 경우 모두 여기서 흡수합니다.
+    mbti: (row.mbti as Mbti | null | undefined) ?? null,
+    personalityTraits: (row.personality_traits as PersonalityTrait[] | null | undefined) ?? [],
   };
 }
 
@@ -63,7 +69,10 @@ export async function fetchSeekerProfiles(userIds: string[]): Promise<SeekerProf
 
 /** 화면에서 고칠 수 있는 필드만. userId 와 updatedAt 은 서버가 정합니다. */
 export type SeekerProfilePatch = Partial<
-  Pick<SeekerProfile, 'nickname' | 'intro' | 'experience' | 'interests' | 'desiredWage'>
+  Pick<
+    SeekerProfile,
+    'nickname' | 'intro' | 'experience' | 'interests' | 'desiredWage' | 'mbti' | 'personalityTraits'
+  >
 >;
 
 /**
@@ -80,6 +89,8 @@ export async function saveSeekerProfile(
   if (patch.experience !== undefined) row.experience = patch.experience;
   if (patch.interests !== undefined) row.interests = patch.interests;
   if (patch.desiredWage !== undefined) row.desired_wage = patch.desiredWage;
+  if (patch.mbti !== undefined) row.mbti = patch.mbti;
+  if (patch.personalityTraits !== undefined) row.personality_traits = patch.personalityTraits;
 
   const { data, error } = await supabase
     .from('seeker_profiles')
