@@ -12,6 +12,7 @@
 import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSeekerRatings, rateSeeker } from '@/lib/api/ratings';
+import type { RatingInput } from '@/types';
 import { useAuth } from '@/lib/auth-context';
 
 export function useSeekerRating(seekerId?: string) {
@@ -32,8 +33,7 @@ export function useSeekerRating(seekerId?: string) {
   const mine = ratings.find((entry) => entry.employerId === user?.id) ?? null;
 
   const mutation = useMutation({
-    mutationFn: ({ score, comment }: { score: number; comment?: string }) =>
-      rateSeeker(seekerId!, score, comment),
+    mutationFn: (input: RatingInput) => rateSeeker(seekerId!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },
@@ -42,8 +42,20 @@ export function useSeekerRating(seekerId?: string) {
     },
   });
 
+  /**
+   * rate({ score, reasons, otherReason }) 가 정식 형태입니다.
+   *
+   * 숫자 하나만 넘기는 예전 호출도 당분간 받습니다 — 사유 UI 가 붙기 전까지
+   * 점수만 저장하던 화면이 그대로 동작해야 합니다. 사유 칩이 올라오면 이 분기를
+   * 지우세요.
+   */
   const rate = useCallback(
-    (score: number, comment?: string) => mutation.mutateAsync({ score, comment }),
+    (input: RatingInput | number) =>
+      mutation.mutateAsync(
+        typeof input === 'number'
+          ? { score: input as RatingInput['score'], reasons: [], otherReason: null }
+          : input,
+      ),
     [mutation],
   );
 
@@ -53,6 +65,10 @@ export function useSeekerRating(seekerId?: string) {
     count,
     myScore: mine?.score ?? null,
     myComment: mine?.comment ?? null,
+    /** 내가 고른 사유. 남의 사유는 넘기지 않습니다 — 평판이 아니라 뒷말이 됩니다 */
+    myReasons: mine?.reasons ?? [],
+    myOtherReason: mine?.otherReason ?? null,
+    /** rate({ score, reasons, otherReason }) — 실패하면 draft 를 보존하고 throw 합니다 */
     rate,
     isRating: mutation.isPending,
     isLoading: query.isLoading,
