@@ -83,7 +83,25 @@ create policy "own swipes update" on swipes for update using (auth.uid() = user_
 create policy "own swipes delete" on swipes for delete using (auth.uid() = user_id);
 
 -- ============================================================
--- 3. applications (선택 — 스펙의 Q2 가 "실제 저장"으로 결정될 때만 실행)
+-- 3. 권한 부여 (안전장치)
+-- ============================================================
+-- 프로젝트 설정의 "Automatically expose new tables" 가 켜져 있으면 이 구문은 중복이라
+-- 아무 일도 하지 않습니다. 꺼져 있으면 이게 없을 때 앱이 공고를 빈 배열로만 받습니다.
+-- (테이블은 멀쩡히 있는데 화면만 비어 있는, 원인 찾기 제일 어려운 증상입니다)
+--
+-- 여기서 "권한"은 "요청을 보낼 수 있다"는 뜻일 뿐이고,
+-- 무엇을 돌려줄지는 위의 RLS 정책이 결정합니다. 경비원은 그대로 서 있습니다.
+
+grant usage on schema public to anon, authenticated;
+
+grant select on jobs        to anon, authenticated;
+grant select on job_reviews to anon, authenticated;
+
+-- 스와이프는 로그인한 사용자만. RLS 가 "본인 행만"으로 다시 한 번 걸러냅니다.
+grant select, insert, update, delete on swipes to authenticated;
+
+-- ============================================================
+-- 4. applications (선택 — 스펙의 Q2 가 "실제 저장"으로 결정될 때만 실행)
 -- ============================================================
 -- 지원 기능을 버튼만 두기로 했다면 아래 블록은 실행하지 않습니다.
 --
@@ -98,3 +116,4 @@ create policy "own swipes delete" on swipes for delete using (auth.uid() = user_
 -- alter table applications enable row level security;
 -- create policy "own apps select" on applications for select using (auth.uid() = user_id);
 -- create policy "own apps insert" on applications for insert with check (auth.uid() = user_id);
+-- grant select, insert on applications to authenticated;
