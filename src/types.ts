@@ -41,6 +41,8 @@ export type Job = {
   reviewCount: number;
   /** null이면 카테고리 기본 그라디언트로 대체 */
   imageUrl: string | null;
+  /** 공고 주인(사업자). 시드 공고는 데모 사업자 계정으로 몰아줍니다 */
+  employerId: string | null;
 };
 
 /** 공고별 리뷰. 카드 뒷면에 최대 3개 노출. 시드 전용(앱에서 작성 불가). */
@@ -69,4 +71,69 @@ export type AppUser = {
   email: string;
   /** auth.users.user_metadata.nickname */
   nickname: string;
+  /**
+   * auth.users.user_metadata.role.
+   * Phase 1 에 만들어진 계정에는 이 값이 없습니다. 없으면 'seeker' 로 봅니다 —
+   * 기존 계정이 로그인했을 때 화면이 비는 것보다 구직자로 보이는 편이 낫습니다.
+   */
+  role: UserRole;
+};
+
+/** 역할. 가입 1단계에서 고르고, 이후 바꾸지 않습니다. */
+export type UserRole = 'seeker' | 'employer';
+
+/**
+ * 구직자 프로필. seeker_profiles 테이블 1:1.
+ *
+ * avatarUrl 과 resumeUrl 은 지금 단계에서 항상 null 입니다.
+ * 파일 업로드는 범위 밖이고, 화면은 이니셜 아바타로 그립니다.
+ * 필드를 남겨 두는 이유는 나중에 Storage 만 붙이면 되게 하기 위해서입니다.
+ */
+export type SeekerProfile = {
+  userId: string;
+  /**
+   * 가입 시 auth.users.user_metadata 에서 복사해 둡니다.
+   * auth 스키마는 API 로 노출되지 않아서, 사업자가 지원자 이름을 읽으려면
+   * 이 자리에 있어야 합니다.
+   */
+  nickname: string | null;
+  /** 자기소개서. 가입 3단계에서 처음 받습니다. 최대 500자 */
+  intro: string | null;
+  /** 경력 (자유 서술) */
+  experience: string | null;
+  /** 관심 직종. Job.category 와 같은 값을 씁니다 */
+  interests: string[];
+  /** 희망 시급 (정수, 원 단위) */
+  desiredWage: number | null;
+  avatarUrl: string | null;
+  resumeUrl: string | null;
+  updatedAt: string;
+};
+
+/** applied = 지원함, viewed = 사업자가 열람, accepted = 채용, rejected = 거절 */
+export type ApplicationStatus = 'applied' | 'viewed' | 'accepted' | 'rejected';
+
+/** 구직자가 보는 내 지원 1건 */
+export type MyApplication = {
+  id: string;
+  job: Job;
+  message: string | null;
+  status: ApplicationStatus;
+  createdAt: string;
+};
+
+/** 사업자가 보는 지원자 1명 (지원서 + 공고 + 구직자 프로필 조인 결과) */
+export type ApplicantEntry = {
+  /** applications.id — setStatus 에 이 값을 넘깁니다 */
+  id: string;
+  status: ApplicationStatus;
+  message: string | null;
+  createdAt: string;
+  job: Job;
+  seeker: {
+    id: string;
+    nickname: string;
+    /** 프로필을 아직 안 만든 지원자도 있습니다. 그때는 null */
+    profile: SeekerProfile | null;
+  };
 };
