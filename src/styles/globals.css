@@ -1,0 +1,124 @@
+/**
+ * OWNER: 개발자 B 단독
+ *
+ * 디자인 토큰의 단일 소스입니다.
+ * 개발자 A는 이 파일을 수정하지 않습니다. 새 색이 필요하면 B에게 요청하세요.
+ *
+ * 중요: 컴포넌트에 #FF4D6D 같은 hex를 직접 쓰지 마세요.
+ *       항상 토큰(bg-brand, text-ink 등)을 경유합니다.
+ */
+
+@import 'tailwindcss';
+
+@theme {
+  /* ---- 브랜드 ---- */
+  --color-brand: #ff4d6d;
+  --color-brand-dark: #e03356;
+  --color-brand-soft: #fff0f3;
+
+  /* ---- 배경 ---- */
+  --color-app: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-subtle: #f3f4f6;
+  --color-outside: #edeff3;
+
+  /* ---- 텍스트 ---- */
+  --color-ink: #111827;
+  --color-body: #374151;
+  --color-muted: #4b5563;
+  --color-faint: #9ca3af;
+
+  /* ---- 보더 ---- */
+  --color-line: #e5e7eb;
+  --color-line-soft: #f3f4f6;
+
+  /* ---- 상태 ---- */
+  --color-like: #22c55e;
+  --color-like-deep: #16a34a;
+  --color-like-bg: #f0fdf4;
+  --color-nope: #ef4444;
+  --color-nope-bg: #fef2f2;
+  --color-star: #f59e0b;
+
+  /* ---- 폰트 ---- */
+  --font-sans:
+    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+    'Apple SD Gothic Neo', sans-serif;
+
+  /* ---- 그림자 ---- */
+  --shadow-card: 0 8px 24px rgba(17, 24, 39, 0.12);
+  --shadow-control: 0 4px 12px rgba(17, 24, 39, 0.1);
+
+  /* ---- radius ---- */
+  --radius-field: 12px;
+  --radius-tile: 16px;
+  --radius-card: 24px;
+}
+
+@layer base {
+  html {
+    /* 한글은 단어 중간에서 잘리면 가독성이 급락한다 */
+    word-break: keep-all;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-outside);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    margin: 0;
+  }
+
+  /* 포커스 링을 제거하지 않는다 (접근성) */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  /* 숫자 폭이 흔들리면 카드가 떨려 보인다 */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* 앱 전체를 감싸는 480px 모바일 컨테이너 */
+  .app-shell {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100dvh; /* iOS 주소창 대응 — 100vh 금지 */
+    background: var(--color-app);
+    position: relative;
+  }
+
+  /* 하단 탭바에 가려지지 않도록 본문에 주는 패딩 */
+  .tabbar-safe {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom) + 16px);
+  }
+
+  /* 한 줄 말줄임 */
+  .clamp-1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 두 줄 말줄임 */
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* 동작 줄이기를 켠 사용자에게는 애니메이션을 걷어낸다. 기능은 그대로 동작해야 한다. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
