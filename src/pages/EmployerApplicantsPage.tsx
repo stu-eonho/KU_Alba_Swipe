@@ -141,7 +141,9 @@ function SwipeView() {
     );
   }
 
-  return <ApplicantDeck entries={deckEntries} onDecide={handleDecide} />;
+  return (
+    <ApplicantDeck entries={deckEntries} onDecide={handleDecide} tutorialMode={tutorialActive} />
+  );
 }
 
 /** 기존 리스트 보기. 상세 시트와 상태 변경은 여기에만 있다 */
