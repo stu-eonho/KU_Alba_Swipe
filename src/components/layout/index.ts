@@ -9,3 +9,5 @@ export { BottomTabBar } from './BottomTabBar';
 export type { BottomTabBarProps } from './BottomTabBar';
 
 export { RequireAuth } from './RequireAuth';
+
+export { ErrorBoundary } from './ErrorBoundary';

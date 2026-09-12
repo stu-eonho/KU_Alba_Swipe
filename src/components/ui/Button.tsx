@@ -5,6 +5,9 @@
  *  - primary   : bg-brand / 흰 텍스트
  *  - secondary : 흰 배경 + 1.5px brand 보더 + brand 텍스트
  *  - ghost     : 투명 배경 + muted 텍스트
+ *  - danger    : bg-nope-bg / text-nope — 파괴적 액션(로그아웃, 기록 초기화 확인)용.
+ *                스펙 <component_styling><buttons>에는 없고 ConfirmDialog destructive를
+ *                위해 기존 토큰만으로 추가했다. 자세한 근거는 _workspace/01b 문서 참조.
  *  - size md 44px / lg 52px, radius 12px, 14px/600
  *  - disabled  : bg-line / text-faint
  *  - pressed   : scale(0.97) 100ms
@@ -14,16 +17,19 @@ import clsx from 'clsx';
 import { Spinner } from './Spinner';
 
 export type ButtonProps = {
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'md' | 'lg';
   fullWidth?: boolean;
   loading?: boolean;
+  /** React 19에서는 ref가 일반 prop이다 — forwardRef 없이 그대로 <button>에 전달된다 */
+  ref?: React.Ref<HTMLButtonElement>;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 const VARIANT: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'bg-brand text-white active:bg-brand-dark',
   secondary: 'bg-surface text-brand border-[1.5px] border-brand active:bg-brand-soft',
   ghost: 'bg-transparent text-muted active:bg-subtle',
+  danger: 'bg-nope-bg text-nope active:bg-nope/10',
 };
 
 // md 44px / lg 52px — 둘 다 터치 타겟 44px 하한을 자체 충족한다

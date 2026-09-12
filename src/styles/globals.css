@@ -49,6 +49,8 @@
   --color-chip-image: rgba(255, 255, 255, 0.9);
   /* 이미지 위 플레이스홀더 아이콘 */
   --color-on-image-faint: rgba(255, 255, 255, 0.5);
+  /* 덱 카드 이미지 하단 그라디언트. color-mix()는 iOS Safari 16.2+ 라 직접 값으로 둔다 */
+  --color-image-scrim: rgba(17, 24, 39, 0.75);
 
   /* ---- 폰트 ---- */
   --font-sans:
@@ -188,6 +190,67 @@
 
 .tab-pop {
   animation: albaswipe-tab-pop 180ms ease-out;
+}
+
+/*
+ * 토스트 등장/퇴장 — transform·opacity만 쓴다 (레이아웃 유발 금지)
+ * 등장 200ms ease-out / 퇴장 150ms. 퇴장 길이는 Toast.tsx의 LEAVE_MS와 맞춰야 한다.
+ */
+@keyframes albaswipe-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes albaswipe-toast-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: albaswipe-toast-in 200ms ease-out;
+}
+
+.toast-leave {
+  animation: albaswipe-toast-out 150ms ease-out forwards;
+}
+
+/* 다이얼로그 — 백드롭 페이드 200ms, 패널은 opacity + scale */
+@keyframes albaswipe-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes albaswipe-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dialog-backdrop {
+  animation: albaswipe-fade-in 200ms ease-out;
+}
+
+.dialog-panel {
+  animation: albaswipe-dialog-in 200ms ease-out;
 }
 
 /* 동작 줄이기: shimmer는 아예 감춘다 (0.01ms 반복이 남으면 미세하게 깜빡인다) */
