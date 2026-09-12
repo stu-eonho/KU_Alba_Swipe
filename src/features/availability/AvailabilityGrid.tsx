@@ -235,10 +235,17 @@ const GridCell = memo(function GridCell({
       aria-label={label}
       aria-selected={on}
       style={{ height: CELL_HEIGHT_PX }}
+      /*
+       * 선택 셀도 테두리는 격자색 그대로 둔다. 예전에는 border 까지 bg 와 같은
+       * 브랜드색이라 인접 셀이 하나의 빨간 덩어리로 뭉쳐 어디까지 칠했는지
+       * 읽히지 않았다. 채우기는 25% 로 낮춘다 — 흰 배경 위 옅은 분홍이라
+       * 오래 봐도 눈이 덜 아프고, 격자선이 위로 또렷하게 남는다.
+       * 시간 경계(정시)는 진한 선을 유지해 09:00/10:00 을 세기 쉽게 한다.
+       */
       className={clsx(
         'flex-1 border-r border-b',
-        on ? 'border-brand bg-brand' : 'bg-surface',
-        !on && (hourEdge ? 'border-b-line border-r-line-soft' : 'border-line-soft'),
+        on ? 'bg-brand/25' : 'bg-surface',
+        hourEdge ? 'border-b-line border-r-line-soft' : 'border-line-soft',
       )}
     />
   );
