@@ -20,7 +20,6 @@ export default function NotificationsPage() {
   }, [markError, toast]);
 
   const handleSelect = (notification: NotificationItem) => {
-    if (!notification.readAt) markRead(notification.id);
     if (!notification.applicationId) {
       toast.error('관련 내용을 찾을 수 없어요');
       return;
@@ -30,6 +29,7 @@ export default function NotificationsPage() {
         ? `/employer/applicants?applicationId=${notification.applicationId}`
         : `/settings/applications/${notification.applicationId}`,
     );
+    if (!notification.readAt) markRead(notification.id);
   };
 
   if (isLoading) {
