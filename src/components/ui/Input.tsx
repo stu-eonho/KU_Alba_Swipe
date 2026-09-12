@@ -11,6 +11,7 @@
  */
 import { useId } from 'react';
 import clsx from 'clsx';
+import { RequiredMark } from './RequiredMark';
 
 export type InputProps = {
   label?: string;
@@ -35,6 +36,7 @@ export function Input({
   const inputId = id ?? autoId;
   const msgId = `${inputId}-msg`;
   const hasError = Boolean(error);
+  const isRequired = Boolean(rest.required || rest['aria-required']);
 
   return (
     <div className={clsx('w-full', containerClassName)}>
@@ -44,6 +46,7 @@ export function Input({
           className="text-muted mb-1.5 block text-[14px] leading-[1.4] font-semibold"
         >
           {label}
+          {isRequired && <RequiredMark />}
         </label>
       )}
       <input
@@ -100,6 +103,7 @@ export function Textarea({
   const areaId = id ?? autoId;
   const msgId = `${areaId}-msg`;
   const hasError = Boolean(error);
+  const isRequired = Boolean(rest.required || rest['aria-required']);
 
   return (
     <div className={clsx('w-full', containerClassName)}>
@@ -109,6 +113,7 @@ export function Textarea({
           className="text-muted mb-1.5 block text-[14px] leading-[1.4] font-semibold"
         >
           {label}
+          {isRequired && <RequiredMark />}
         </label>
       )}
       <textarea

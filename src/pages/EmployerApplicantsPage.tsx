@@ -35,7 +35,13 @@ export default function EmployerApplicantsPage() {
 }
 
 /** 리스트 / 스와이프 전환. 44px 높이 → 두 버튼 모두 터치 타겟 하한을 자체 충족한다 */
-function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (next: ViewMode) => void }) {
+function ViewModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: ViewMode;
+  onChange: (next: ViewMode) => void;
+}) {
   const options: { value: ViewMode; label: string }[] = [
     { value: 'swipe', label: '스와이프' },
     { value: 'list', label: '리스트' },
@@ -158,7 +164,7 @@ function ListView() {
       <EmptyState
         icon={<Inbox size={52} className="text-faint" aria-hidden />}
         title="아직 지원자가 없어요"
-        description="지원서가 들어오면 이곳에서 프로필을 확인하고 채용할 수 있어요"
+        description="지원서가 들어오면 이곳에서 프로필을 확인하고 관심을 보낼 수 있어요"
         actionLabel="새로고침"
         actionVariant="secondary"
         onAction={() => void retry()}
@@ -168,7 +174,7 @@ function ListView() {
 
   return (
     <>
-      <ul aria-label="지원자 목록" className="border-line-soft border-t">
+      <ul aria-label="지원자 목록" className="flex flex-col gap-2 px-3 py-3">
         {applications.map((entry: ApplicantEntry) => (
           <li key={entry.id}>
             <ApplicantCard

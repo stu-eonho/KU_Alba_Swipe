@@ -17,27 +17,27 @@
    * ========================================================== */
 
   /* ---- 브랜드: 시스템의 유일한 액션 컬러 ---- */
-  --color-brand: #fb5957;       /* KR 로그인 코랄 레드 — 주 CTA */
-  --color-brand-dark: #da3238;  /* EN 브랜드 레드 — 눌림/강한 강조 */
-  --color-brand-soft: #f6f7fa;  /* 선택 상태 배경 (Surface Soft) */
+  --color-brand: #fb5957; /* KR 로그인 코랄 레드 — 주 CTA */
+  --color-brand-dark: #da3238; /* EN 브랜드 레드 — 눌림/강한 강조 */
+  --color-brand-soft: #f6f7fa; /* 선택 상태 배경 (Surface Soft) */
 
   /* ---- 캔버스 · 서피스 ---- */
-  --color-app: #f9f9fb;         /* Canvas EN — 흰 카드가 그림자 없이 읽히게 하는 틴트 */
+  --color-app: #f9f9fb; /* Canvas EN — 흰 카드가 그림자 없이 읽히게 하는 틴트 */
   --color-surface: #ffffff;
-  --color-subtle: #f2f2f3;      /* Chip Surface */
-  --color-search: #eff0f4;      /* Search Surface · 스켈레톤 톤 */
-  --color-outside: #eff0f4;     /* 480px 컨테이너 바깥 */
+  --color-subtle: #f2f2f3; /* Chip Surface */
+  --color-search: #eff0f4; /* Search Surface · 스켈레톤 톤 */
+  --color-outside: #eff0f4; /* 480px 컨테이너 바깥 */
 
   /* ---- 잉크 · 텍스트 (크기가 아니라 굵기와 그레이로 위계를 만든다) ---- */
-  --color-ink: #222222;         /* 제목·본문 기본 */
-  --color-ink-deep: #18202a;    /* 활성 내비 */
-  --color-body: #42424b;        /* 본문 그레이잉크 */
-  --color-muted: #5f6b7c;       /* 비활성 내비 — 채도 낮은 스틸블루 */
-  --color-faint: #94969b;       /* 메타: 라벨·카운트·타임스탬프 */
+  --color-ink: #222222; /* 제목·본문 기본 */
+  --color-ink-deep: #18202a; /* 활성 내비 */
+  --color-body: #42424b; /* 본문 그레이잉크 */
+  --color-muted: #5f6b7c; /* 비활성 내비 — 채도 낮은 스틸블루 */
+  --color-faint: #94969b; /* 메타: 라벨·카운트·타임스탬프 */
 
   /* ---- 헤어라인: 그림자를 대신해 구조를 만드는 장치 ---- */
-  --color-line: #d7d7d7;        /* KR 리스트 구분선 — 주 분리 장치 */
-  --color-line-soft: #e9ebee;   /* EN 카드 보더 */
+  --color-line: #d7d7d7; /* KR 리스트 구분선 — 주 분리 장치 */
+  --color-line-soft: #e9ebee; /* EN 카드 보더 */
   --color-input-border: #d4d4d4;
 
   /* ---- 스와이프 액션 ----
@@ -49,11 +49,16 @@
   --color-nope: #5f6b7c;
   --color-nope-bg: #f2f2f3;
 
-  --color-star: #ff4848;        /* Upvote Red — 평점·좋아요 카운트 */
+  --color-star: #ff4848; /* Upvote Red — 평점·좋아요 카운트 */
   --color-error: #da3238;
+  --color-info: #41658a;
+  --color-info-soft: #edf4fa;
+  --color-success: #287a55;
+  --color-success-soft: #edf7f1;
+  --color-danger-soft: #fff0f0;
 
   /* ---- 오버레이 ---- */
-  --color-backdrop: rgba(0, 0, 0, 0.8);   /* Blind 모달 스크림 */
+  --color-backdrop: rgba(0, 0, 0, 0.8); /* Blind 모달 스크림 */
   --color-scrim: rgba(34, 34, 34, 0.5);
   --color-chip-image: rgba(255, 255, 255, 0.92);
   --color-on-image-faint: rgba(255, 255, 255, 0.5);

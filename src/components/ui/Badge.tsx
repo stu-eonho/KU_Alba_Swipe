@@ -15,7 +15,7 @@ export type BadgeProps = {
   children: React.ReactNode;
   /** 좌측 아이콘. 크기·색은 호출부가 정한다 (예: Star 12px text-star) */
   icon?: React.ReactNode;
-  variant?: 'neutral' | 'brand' | 'rating' | 'success' | 'danger';
+  variant?: 'neutral' | 'brand' | 'rating' | 'info' | 'success' | 'danger';
   className?: string;
 };
 
@@ -23,8 +23,9 @@ const VARIANT: Record<NonNullable<BadgeProps['variant']>, string> = {
   neutral: 'bg-subtle text-muted',
   brand: 'bg-brand text-white',
   rating: 'bg-subtle text-ink',
-  success: 'bg-like-bg text-like-deep',
-  danger: 'bg-nope-bg text-nope',
+  info: 'bg-info-soft text-info',
+  success: 'bg-success-soft text-success',
+  danger: 'bg-danger-soft text-error',
 };
 
 export function Badge({ children, icon, variant = 'neutral', className }: BadgeProps) {
