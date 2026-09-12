@@ -245,12 +245,21 @@ const { applications, isLoading, setStatus } = useEmployerApplicants(jobId?);
 **새로 소유할 것**: `src/features/onboarding/` (튜토리얼), `src/features/profile/` (프로필 화면), `src/features/employer-ui/` (사업자 화면 UI)
 
 ### B-1 · F1 홈 카드 탭 → 상세 (30분) — 지금 시작
-**A를 전혀 기다리지 않습니다.** 재사용할 것이 이미 다 있습니다.
-- `SwipeCard` 는 이미 탭과 드래그를 구분합니다(이동 8px 미만이면 탭)
-- `ExpandedCard` + `BackFace` 를 그대로 씁니다 — 찜 화면과 같은 컴포넌트
-- 덱 카드에도 `layoutId={gridCardLayoutId(job.id)}` 를 주면 확대 전환이 그대로 붙습니다
+**A를 전혀 기다리지 않습니다.**
 
-주의: 탭으로 열었을 때 **카드가 스와이프되면 안 됩니다.** 확대 중에는 덱의 키보드 단축키도 막으세요(`ExpandedCard` 가 Escape 를 capture 로 먹는 것과 같은 방식).
+정정: 처음에 "`SwipeCard` 가 이미 탭과 드래그를 구분한다"고 썼는데 **사실이 아닙니다.** 확인해 보니 탭 감지가 없어 직접 만들어야 합니다(이동 8px 미만 + 300ms 미만이면 탭). `@use-gesture/react` 의 `useDrag` 가 주는 `tap`/`distance`/`elapsedTime` 을 쓰는 편이 직접 계산보다 안전합니다.
+
+재사용할 것:
+- `ExpandedCard` + `BackFace` — 찜 화면과 **같은 컴포넌트**. 새로 만들지 않습니다
+- `useReviews(jobId)` — 리뷰
+- `WishlistPage` 의 `ExpandedCardWithReviews` 패턴을 그대로 참고
+
+주의 3가지:
+1. 탭으로 열었을 때 **카드가 같이 스와이프되면 안 됩니다.** 두 경로가 배타적이어야 합니다
+2. 확대 중에는 **덱의 키보드 단축키와 컨트롤 버튼을 막습니다** (`ExpandedCard` 가 Escape 를 capture 로 먹는 것과 같은 방식)
+3. 같은 `layoutId` 요소가 둘 동시에 살아 있으면 카드가 다른 카드를 뚫고 나옵니다. 찜 격자에서 확대 중인 셀을 빈 자리로 교체해 해결했는데, 덱에서도 같은 원리가 필요합니다
+
+추가: `BackFace` 의 "지원하기"는 `/apply/:jobId` 로 가고 `ApplyPage` 는 **찜 캐시(`['swipes']`)에서** 공고를 찾습니다. 덱에서 연 공고는 아직 찜 전이라 캐시에 없어 "찾을 수 없음"이 뜹니다 — 덱 캐시(`['jobs']`)도 함께 보도록 고쳐야 합니다.
 
 ### B-2 · F2 역할별 라우터 분기 (40분)
 `types.ts` 에 `role` 이 들어오면 시작합니다. 그 전에는 B-1·B-4 를 하세요.
