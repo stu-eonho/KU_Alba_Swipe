@@ -58,6 +58,8 @@ export type ApplicantDeckProps = {
   onDecide?: (seekerId: string, direction: SwipeDirection, jobId: string) => void;
   /** 빈 상태에서 누를 CTA 경로. 기본은 내 공고 탭 */
   emptyActionTo?: string;
+  /** 튜토리얼 설명 카드가 지원자 본문을 덮지 않도록 덱 높이를 확보한다. */
+  tutorialMode?: boolean;
   className?: string;
 };
 
@@ -65,6 +67,7 @@ export function ApplicantDeck({
   entries,
   onDecide,
   emptyActionTo = '/employer/jobs',
+  tutorialMode = false,
   className,
 }: ApplicantDeckProps) {
   const [exiting, setExiting] = useState<ExitingCard[]>([]);
@@ -169,7 +172,18 @@ export function ApplicantDeck({
       {/* data-tour — 튜토리얼 스포트라이트 앵커. 카드가 아니라 스택 영역 전체다 (PHASE7 F9) */}
       <div
         data-tour="applicant-deck"
-        className="relative mx-auto mt-4 aspect-[3/4] w-[calc(100%-32px)] max-w-[448px]"
+        className={clsx(
+          'relative mx-auto mt-4 aspect-[3/4]',
+          tutorialMode ? 'max-w-[300px]' : 'w-[calc(100%-32px)] max-w-[448px]',
+        )}
+        style={
+          tutorialMode
+            ? {
+                // 상단 UI를 제외하고 설명 카드용 세로 여백 약 220px를 남긴다.
+                width: 'min(calc(100% - 32px), 300px, calc((100dvh - 280px) * 0.75))',
+              }
+            : undefined
+        }
       >
         {showEmpty ? (
           <div className="flex h-full items-center justify-center">

@@ -340,7 +340,7 @@ export function InteractiveTutorial({
             animate={{ opacity: 1, transition: enter }}
             exit={{ opacity: 0, transition: exit }}
             className={`bg-surface border-line pointer-events-auto rounded-card border ${
-              role === 'employer' ? 'p-4' : 'p-5'
+              role === 'employer' ? 'p-3' : 'p-5'
             }`}
           >
             <div className="flex items-start gap-2">
@@ -368,16 +368,14 @@ export function InteractiveTutorial({
               {step.body}
             </p>
 
-            {waiting && (
+            {waiting && role !== 'employer' && (
               <p className="text-faint mt-3 text-[12px] leading-[1.4]">
-                {role === 'employer'
-                  ? '지원자에게 바로 알림이 갑니다'
-                  : '직접 한 번 해보세요. 잠시 뒤 건너뛸 수 있어요'}
+                직접 한 번 해보세요. 잠시 뒤 건너뛸 수 있어요
               </p>
             )}
 
             <div
-              className={`${role === 'employer' ? 'mt-4 gap-3' : 'mt-5 gap-4'} flex flex-col items-center`}
+              className={`${role === 'employer' ? 'mt-2 gap-2' : 'mt-5 gap-4'} flex flex-col items-center`}
             >
               {/* 점 인디케이터 — 장식. 보조기술에는 아래 live 영역으로 전달한다 */}
               <div className="flex items-center gap-1.5" aria-hidden>
