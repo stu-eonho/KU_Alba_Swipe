@@ -4,7 +4,7 @@
  * swipes 테이블 하나가 세 가지 역할을 합니다.
  *   1. 덱 제외 — 여기 행이 있는 공고는 홈에 다시 나오지 않는다 (좌/우 무관)
  *   2. 찜 목록 — direction = 'right' 인 행이 곧 찜이다
- *   3. 찜 해제 — DELETE 가 아니라 direction 을 'left' 로 UPDATE 한다
+ *   3. 찜 해제 — 행을 DELETE 한다. 해제하면 그 공고는 덱 맨 뒤에 다시 나타난다
  */
 import { supabase } from '@/lib/supabase';
 import { toJob, type JobRow } from '@/lib/api/jobs';
@@ -49,14 +49,19 @@ export async function fetchWishlist(): Promise<WishlistEntry[]> {
 }
 
 /**
- * 찜 해제.
+ * 찜 해제 = 스와이프를 없던 일로 되돌리기.
  *
- * CRITICAL: 행을 DELETE 하지 않습니다. 삭제하면 그 공고가 홈 덱에 다시 나타나는데,
- * 방금 치운 공고가 되돌아오는 셈이라 사용자에게는 버그로 보입니다.
+ * 행을 DELETE 합니다. 원래는 direction 을 'left' 로 UPDATE 했는데,
+ * 그러면 기록이 남아 fetchDeckJobs 가 그 공고를 영영 제외했습니다 —
+ * 해제한 공고를 다시 볼 방법이 아예 없었습니다.
+ *
+ * 설계 의도는 "방금 치운 공고가 덱에 되돌아오면 이상하다"였지만,
+ * 사용자는 반대를 원합니다. 되돌릴 수 있는 쪽이 맞습니다.
+ * 해제한 공고는 덱 맨 뒤에 다시 나타납니다.
  */
 export async function unwishlist(jobId: string): Promise<void> {
   // RLS 가 내 행으로 범위를 좁혀 주므로 user_id 조건은 필요 없습니다.
-  const { error } = await supabase.from('swipes').update({ direction: 'left' }).eq('job_id', jobId);
+  const { error } = await supabase.from('swipes').delete().eq('job_id', jobId);
   if (error) throw error;
 }
 
