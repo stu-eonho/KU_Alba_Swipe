@@ -17,6 +17,11 @@
 --    나머지는 null 이고, 앱이 카테고리별 그라디언트로 대체합니다(정상 동작).
 --
 -- 재실행 안전: 같은 상호명이 이미 있으면 건너뜁니다.
+--
+-- ⚠️ employer_id 를 넣지 않습니다. 실행 후 **반드시** fix_phase7_data.sql 을 돌려
+--    주인을 배정하세요. 주인이 없으면 구인자 지원자 목록이 비고, 지원 알림도
+--    조용히 안 갑니다(trigger 가 employer_id null 이면 건너뜀). 에러가 안 나서
+--    데모 직전까지 모릅니다.
 
 insert into jobs (
   store_name, category, hourly_wage, summary, description, address, region,
