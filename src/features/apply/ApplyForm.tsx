@@ -58,7 +58,7 @@ export function ApplyForm({ job }: ApplyFormProps) {
           <JobThumb job={job} iconSize={20} />
         </div>
         <div className="min-w-0">
-          <p className="clamp-1 text-ink text-[15px] leading-[1.35] font-bold">{job.storeName}</p>
+          <p className="clamp-1 text-ink text-[15px] leading-[1.35] font-semibold">{job.storeName}</p>
           <p className="text-muted mt-0.5 text-[13px] leading-[1.4]">
             {job.category} · 시급 <span className="tabular">{formatWage(job.hourlyWage)}</span>
           </p>

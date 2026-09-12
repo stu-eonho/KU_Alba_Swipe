@@ -155,7 +155,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   toast.onAction?.();
                   dismiss();
                 }}
-                className="touch-44 shrink-0 px-1 text-[14px] font-bold underline underline-offset-2 active:opacity-70"
+                className="touch-44 shrink-0 px-1 text-[14px] font-semibold underline underline-offset-2 active:opacity-70"
               >
                 {toast.actionLabel}
               </button>

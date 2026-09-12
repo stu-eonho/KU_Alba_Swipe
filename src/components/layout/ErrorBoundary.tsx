@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
         }
       >
         <AlertTriangle size={56} strokeWidth={1.75} className="text-nope" aria-hidden />
-        <p className="text-[18px] font-bold text-ink">문제가 발생했어요</p>
+        <p className="text-[18px] font-semibold text-ink">문제가 발생했어요</p>
         <p className="text-[14px] text-muted">잠시 후 다시 시도해 주세요</p>
 
         <div className="mt-2">

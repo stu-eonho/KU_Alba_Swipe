@@ -5,7 +5,7 @@
  *  - 높이 52px, radius 12px, 보더 1px line, padding 좌우 16px
  *  - 폰트 16px (CRITICAL: 미만이면 iOS Safari가 화면을 자동 확대한다)
  *  - focus: 보더 brand + ring 3px brand/15
- *  - error: 보더 nope, 필드 하단 6px에 13px nope 메시지
+ *  - error: 보더 error(#da3238), 필드 하단 6px에 13px error 메시지
  *
  * 라벨/에러 슬롯 내장. 개발자 A의 로그인·회원가입 폼이 이걸 그대로 쓴다.
  */
@@ -56,7 +56,7 @@ export function Input({
           'rounded-field bg-surface border transition-colors',
           'focus:ring-brand/15 focus:ring-[3px] focus:outline-none',
           'disabled:bg-subtle disabled:text-faint',
-          hasError ? 'border-nope focus:border-nope' : 'border-line focus:border-brand',
+          hasError ? 'border-error focus:border-error' : 'border-line focus:border-brand',
           className,
         )}
         {...rest}
@@ -66,7 +66,7 @@ export function Input({
           id={msgId}
           className={clsx(
             'mt-1.5 text-[13px] leading-[1.45]',
-            hasError ? 'text-nope' : 'text-faint',
+            hasError ? 'text-error' : 'text-faint',
           )}
         >
           {error ?? hint}
@@ -119,7 +119,7 @@ export function Textarea({
           'text-ink placeholder:text-faint min-h-[140px] w-full resize-y px-4 py-3 text-[16px]',
           'rounded-field bg-surface border leading-[1.55] transition-colors',
           'focus:ring-brand/15 focus:ring-[3px] focus:outline-none',
-          hasError ? 'border-nope focus:border-nope' : 'border-line focus:border-brand',
+          hasError ? 'border-error focus:border-error' : 'border-line focus:border-brand',
           className,
         )}
         {...rest}
@@ -129,7 +129,7 @@ export function Textarea({
           id={msgId}
           className={clsx(
             'mt-1.5 text-[13px] leading-[1.45]',
-            hasError ? 'text-nope' : 'text-faint',
+            hasError ? 'text-error' : 'text-faint',
           )}
         >
           {error ?? hint}

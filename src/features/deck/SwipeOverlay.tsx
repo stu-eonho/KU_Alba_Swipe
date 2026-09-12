@@ -19,7 +19,7 @@ export type SwipeOverlayProps = {
 };
 
 const STAMP_BASE =
-  'absolute rounded-field border-4 px-3 py-1.5 text-[28px] leading-none font-extrabold';
+  'absolute rounded-field border-4 px-3 py-1.5 text-[18px] leading-none font-semibold';
 
 export function SwipeOverlay({ likeOpacity, nopeOpacity }: SwipeOverlayProps) {
   return (

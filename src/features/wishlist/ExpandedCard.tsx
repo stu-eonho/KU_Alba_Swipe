@@ -67,13 +67,13 @@ function FrontFace({ job }: { job: Job }) {
         <JobThumb job={job} iconSize={48} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-1 p-3">
-        <p className="clamp-1 text-ink text-[14px] leading-[1.35] font-bold">{job.storeName}</p>
+        <p className="clamp-1 text-ink text-[14px] leading-[1.35] font-semibold">{job.storeName}</p>
         <div>
           <Chip variant="neutral" size="sm">
             {job.category}
           </Chip>
         </div>
-        <p className="tabular text-brand text-[18px] leading-[1.2] font-extrabold">
+        <p className="tabular text-ink text-[18px] leading-[1.2] font-semibold">
           {formatWage(job.hourlyWage)}
         </p>
         <p className="clamp-2 text-faint text-[12px] leading-[1.4]">{job.summary}</p>
@@ -169,7 +169,7 @@ export function ExpandedCard({ job, onClose, reviews }: ExpandedCardProps) {
                회전을 끈 폴백에서는 3D 컨텍스트를 아예 만들지 않는다 — 불필요한 합성 레이어가
                확대 도중 깜빡임을 만들 수 있다. */
             style={flip ? { perspective: PERSPECTIVE_PX } : undefined}
-            className="rounded-tile bg-surface shadow-card pointer-events-auto relative h-[min(70dvh,520px)] w-[calc(100%-48px)] max-w-[432px] overflow-hidden"
+            className="rounded-tile bg-surface border-line-soft pointer-events-auto relative h-[min(70dvh,520px)] w-[calc(100%-48px)] max-w-[432px] overflow-hidden border"
           >
             <motion.div
               ref={panelRef}

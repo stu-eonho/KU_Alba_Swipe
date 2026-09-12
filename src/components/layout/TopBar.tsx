@@ -26,7 +26,7 @@ export function TopBar({ title, left, right, className }: TopBarProps) {
       )}
     >
       <div className="flex w-11 shrink-0 items-center justify-start">{left}</div>
-      <h1 className="text-ink flex-1 truncate px-1 text-center text-[17px] leading-[1.4] font-bold">
+      <h1 className="text-ink flex-1 truncate px-1 text-center text-[16px] leading-[1.4] font-semibold">
         {title}
       </h1>
       <div className="flex w-11 shrink-0 items-center justify-end">{right}</div>

@@ -3,7 +3,7 @@
  *
  * ALBASWIPE_SPEC.md <swipe_controls>
  *   카드 아래 24px, 중앙 정렬, gap 24px
- *   관심없음 : 64px 원, 흰 배경 + shadow-control, X 30px nope, aria-label "관심 없음"
+ *   관심없음 : 64px 원, 흰 배경 + 1px 헤어라인, X 30px nope, aria-label "관심 없음"
  *   찜       : 64px 원, 같은 스타일, Heart(fill) 30px like, aria-label "찜하기"
  *   누름     : scale 0.88 (100ms) 후 복귀 → 드래그와 동일한 날아가기가 재생된다
  *

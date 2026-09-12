@@ -74,13 +74,13 @@ export function GridCard({
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col gap-1 p-3">
-          <p className="clamp-1 text-ink text-[14px] leading-[1.35] font-bold">{job.storeName}</p>
+          <p className="clamp-1 text-ink text-[14px] leading-[1.35] font-semibold">{job.storeName}</p>
           <div>
             <Chip variant="neutral" size="sm">
               {job.category}
             </Chip>
           </div>
-          <p className="tabular text-brand text-[18px] leading-[1.2] font-extrabold">
+          <p className="tabular text-ink text-[18px] leading-[1.2] font-semibold">
             {formatWage(job.hourlyWage)}
           </p>
           <p className="clamp-2 text-faint text-[12px] leading-[1.4]">{job.summary}</p>

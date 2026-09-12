@@ -9,7 +9,7 @@
  *
  * variant:
  *  - plain   : 배경 없음 (탑바 뒤로가기 등)
- *  - surface : 흰 원 + shadow-control (스와이프 컨트롤 64px)
+ *  - surface : 흰 원 + 1px 헤어라인 (스와이프 컨트롤 64px). Blind는 그림자를 쓰지 않는다.
  *  - scrim   : 어두운 반투명 원 + 흰 아이콘 (이미지 위 찜해제)
  *  - brand   : brand 원 + 흰 아이콘
  */
@@ -26,7 +26,7 @@ export type IconButtonProps = {
 
 const VARIANT: Record<NonNullable<IconButtonProps['variant']>, string> = {
   plain: 'bg-transparent text-muted active:bg-subtle',
-  surface: 'bg-surface shadow-control text-ink',
+  surface: 'bg-surface border border-line text-ink',
   scrim: 'bg-scrim text-white',
   brand: 'bg-brand text-white active:bg-brand-dark',
 };

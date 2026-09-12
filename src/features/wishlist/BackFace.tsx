@@ -37,7 +37,7 @@ export type BackFaceProps = {
 };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-ink text-[14px] leading-[1.4] font-bold">{children}</h3>;
+  return <h3 className="text-ink text-[14px] leading-[1.4] font-semibold">{children}</h3>;
 }
 
 function ReviewCard({ review }: { review: Review }) {
@@ -87,11 +87,11 @@ export function BackFace({ job, reviews, onClose, onBeforeApply, className }: Ba
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-5">
         <header className="space-y-1.5 pr-10">
-          <h2 className="text-ink text-[20px] leading-[1.3] font-bold">{job.storeName}</h2>
+          <h2 className="text-ink text-[18px] leading-[1.3] font-semibold">{job.storeName}</h2>
 
           <div className="flex items-center gap-1.5">
             <Star size={16} strokeWidth={2} className="text-star fill-star" aria-hidden />
-            <span className="tabular text-ink text-[15px] leading-[1.3] font-bold">
+            <span className="tabular text-ink text-[15px] leading-[1.3] font-semibold">
               {job.rating.toFixed(1)}
             </span>
             <span className="text-faint text-[13px] leading-[1.3]">
@@ -99,7 +99,7 @@ export function BackFace({ job, reviews, onClose, onBeforeApply, className }: Ba
             </span>
           </div>
 
-          <p className="tabular text-brand text-[24px] leading-[1.2] font-extrabold">
+          <p className="tabular text-ink text-[18px] leading-[1.2] font-semibold">
             {formatWage(job.hourlyWage)}
           </p>
         </header>

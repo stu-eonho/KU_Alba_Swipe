@@ -5,7 +5,8 @@
  *  높이 64px + env(safe-area-inset-bottom), 배경 surface, 상단 보더 1px line,
  *  fixed bottom 0, z-index 30.
  *  3탭: 홈(Home) / 찜(Heart) / 설정(Settings). 아이콘 24px + 라벨 11px/500, gap 4px.
- *  비활성 faint, 활성 brand. 찜 탭 개수 배지(16px 원, bg-brand, 흰 10px, 99 초과 "99+").
+ *  비활성 muted, 활성 ink-deep. Blind는 내비 활성을 레드가 아닌 잉크로 표시한다
+ *  (레드는 CTA 전용). 찜 탭 개수 배지(16px 원, bg-brand, 흰 10px, 99 초과 "99+").
  *
  * fixed는 480px 컨테이너를 벗어나므로 좌우 중앙 정렬 + max-width를 직접 건다.
  */
@@ -53,7 +54,7 @@ export function BottomTabBar({ wishlistCount, className }: BottomTabBarProps) {
                 clsx(
                   'flex h-full w-full flex-col items-center justify-center gap-1',
                   'transition-colors select-none',
-                  isActive ? 'text-brand' : 'text-faint',
+                  isActive ? 'text-ink-deep' : 'text-muted',
                 )
               }
             >
@@ -68,7 +69,7 @@ export function BottomTabBar({ wishlistCount, className }: BottomTabBarProps) {
                     />
                     {to === '/wishlist' && badge && (
                       <span
-                        className="bg-brand tabular absolute -top-1 -right-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold text-white"
+                        className="bg-brand tabular absolute -top-1 -right-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold text-white"
                         aria-label={`찜한 공고 ${wishlistCount}개`}
                       >
                         {badge}

@@ -123,7 +123,7 @@ export function ConfirmDialog({
           className,
         )}
       >
-        <h2 id={titleId} className="text-ink text-[17px] leading-[1.4] font-bold">
+        <h2 id={titleId} className="text-ink text-[16px] leading-[1.4] font-semibold">
           {title}
         </h2>
         {description && (

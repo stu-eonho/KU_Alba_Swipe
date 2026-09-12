@@ -11,60 +11,76 @@
 @import 'tailwindcss';
 
 @theme {
-  /* ---- 브랜드 ---- */
-  --color-brand: #ff4d6d;
-  --color-brand-dark: #e03356;
-  --color-brand-soft: #fff0f3;
+  /* ==========================================================
+   * Blind 레퍼런스 디자인 시스템 (DESIGN_Swipe.md)
+   * 핵심: 플랫(그림자 0) + 헤어라인으로만 구조 · 레드 하나에 역할 하나
+   * ========================================================== */
 
-  /* ---- 배경 ---- */
-  --color-app: #f7f8fa;
+  /* ---- 브랜드: 시스템의 유일한 액션 컬러 ---- */
+  --color-brand: #fb5957;       /* KR 로그인 코랄 레드 — 주 CTA */
+  --color-brand-dark: #da3238;  /* EN 브랜드 레드 — 눌림/강한 강조 */
+  --color-brand-soft: #f6f7fa;  /* 선택 상태 배경 (Surface Soft) */
+
+  /* ---- 캔버스 · 서피스 ---- */
+  --color-app: #f9f9fb;         /* Canvas EN — 흰 카드가 그림자 없이 읽히게 하는 틴트 */
   --color-surface: #ffffff;
-  --color-subtle: #f3f4f6;
-  --color-outside: #edeff3;
+  --color-subtle: #f2f2f3;      /* Chip Surface */
+  --color-search: #eff0f4;      /* Search Surface · 스켈레톤 톤 */
+  --color-outside: #eff0f4;     /* 480px 컨테이너 바깥 */
 
-  /* ---- 텍스트 ---- */
-  --color-ink: #111827;
-  --color-body: #374151;
-  --color-muted: #4b5563;
-  --color-faint: #9ca3af;
+  /* ---- 잉크 · 텍스트 (크기가 아니라 굵기와 그레이로 위계를 만든다) ---- */
+  --color-ink: #222222;         /* 제목·본문 기본 */
+  --color-ink-deep: #18202a;    /* 활성 내비 */
+  --color-body: #42424b;        /* 본문 그레이잉크 */
+  --color-muted: #5f6b7c;       /* 비활성 내비 — 채도 낮은 스틸블루 */
+  --color-faint: #94969b;       /* 메타: 라벨·카운트·타임스탬프 */
 
-  /* ---- 보더 ---- */
-  --color-line: #e5e7eb;
-  --color-line-soft: #f3f4f6;
+  /* ---- 헤어라인: 그림자를 대신해 구조를 만드는 장치 ---- */
+  --color-line: #d7d7d7;        /* KR 리스트 구분선 — 주 분리 장치 */
+  --color-line-soft: #e9ebee;   /* EN 카드 보더 */
+  --color-input-border: #d4d4d4;
 
-  /* ---- 상태 ---- */
-  --color-like: #22c55e;
-  --color-like-deep: #16a34a;
-  --color-like-bg: #f0fdf4;
-  --color-nope: #ef4444;
-  --color-nope-bg: #fef2f2;
-  --color-star: #f59e0b;
+  /* ---- 스와이프 액션 ----
+   * Blind 원칙 "레드 하나, 역할 하나"를 지킨다. 초록을 새로 만들지 않고
+   * 긍정(찜)이 유일한 레드를 갖고, 부정(관심없음)은 중립 그레이로 물러난다. */
+  --color-like: #fb5957;
+  --color-like-deep: #da3238;
+  --color-like-bg: #f2f2f3;
+  --color-nope: #5f6b7c;
+  --color-nope-bg: #f2f2f3;
 
-  /* ---- 오버레이 (ui-foundation 추가) ---- */
-  /* 확대 카드 백드롭 */
-  --color-backdrop: rgba(17, 24, 39, 0.45);
-  /* 이미지 위 원형 버튼(격자 카드 찜해제) */
-  --color-scrim: rgba(17, 24, 39, 0.5);
-  /* 덱 카드 이미지 위 직종 칩 */
-  --color-chip-image: rgba(255, 255, 255, 0.9);
-  /* 이미지 위 플레이스홀더 아이콘 */
+  --color-star: #ff4848;        /* Upvote Red — 평점·좋아요 카운트 */
+  --color-error: #da3238;
+
+  /* ---- 오버레이 ---- */
+  --color-backdrop: rgba(0, 0, 0, 0.8);   /* Blind 모달 스크림 */
+  --color-scrim: rgba(34, 34, 34, 0.5);
+  --color-chip-image: rgba(255, 255, 255, 0.92);
   --color-on-image-faint: rgba(255, 255, 255, 0.5);
-  /* 덱 카드 이미지 하단 그라디언트. color-mix()는 iOS Safari 16.2+ 라 직접 값으로 둔다 */
-  --color-image-scrim: rgba(17, 24, 39, 0.75);
+  --color-image-scrim: rgba(34, 34, 34, 0.72);
 
   /* ---- 폰트 ---- */
   --font-sans:
     'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
-    'Apple SD Gothic Neo', sans-serif;
+    'Apple SD Gothic Neo', 'Malgun Gothic', dotum, sans-serif;
 
-  /* ---- 그림자 ---- */
-  --shadow-card: 0 8px 24px rgba(17, 24, 39, 0.12);
-  --shadow-control: 0 4px 12px rgba(17, 24, 39, 0.1);
+  /* ---- 깊이: 전면 플랫 ----
+   * DESIGN_Swipe.md "Live inspection found no box-shadows in use."
+   * 분리는 틴트 캔버스 + 헤어라인이 담당한다. */
+  --shadow-card: none;
+  --shadow-control: none;
 
-  /* ---- radius ---- */
-  --radius-field: 12px;
-  --radius-tile: 16px;
-  --radius-card: 24px;
+  /* ---- radius (Blind 스케일: 4 / 8 / 12 / 20) ---- */
+  --radius-chip: 4px;
+  --radius-field: 8px;
+  --radius-tile: 12px;
+  --radius-card: 12px;
+  --radius-pill: 20px;
+
+  /* ---- 모션: 기능적으로 정적 ----
+   * 스프링·오버슈트·축하 모션 없음. */
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
 
 @layer base {

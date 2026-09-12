@@ -82,7 +82,7 @@ export function SwipeCard({ job, depth, exitDirection = null, onCommit, zIndex }
         aria-label={`${job.storeName}, ${job.category}, 시급 ${wage}`}
         aria-hidden={!isTop}
         className={clsx(
-          'relative h-full w-full overflow-hidden rounded-card bg-surface shadow-card select-none',
+          'relative h-full w-full overflow-hidden rounded-card bg-surface border border-line-soft select-none',
           !isTop && 'pointer-events-none',
         )}
         style={{
@@ -121,7 +121,7 @@ export function SwipeCard({ job, depth, exitDirection = null, onCommit, zIndex }
             <Chip variant="onImage" size="sm">
               {job.category}
             </Chip>
-            <h2 className="clamp-2 mt-2 text-[22px] leading-tight font-bold text-white">
+            <h2 className="clamp-2 mt-2 text-[18px] leading-tight font-semibold text-white">
               {job.storeName}
             </h2>
           </div>
@@ -131,7 +131,7 @@ export function SwipeCard({ job, depth, exitDirection = null, onCommit, zIndex }
         <div className="flex h-[40%] flex-col gap-2 p-4">
           <div className="flex items-baseline gap-2">
             <span className="text-[13px] text-muted">시급</span>
-            <span className="tabular text-[24px] leading-none font-extrabold text-brand">
+            <span className="tabular text-[18px] leading-none font-semibold text-ink">
               {wage}
             </span>
           </div>

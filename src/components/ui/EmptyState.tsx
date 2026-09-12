@@ -51,7 +51,7 @@ export function EmptyState({
       )}
     >
       {icon && <div className="mb-4 flex items-center justify-center">{icon}</div>}
-      <h2 className="text-ink text-[18px] leading-[1.4] font-bold">{title}</h2>
+      <h2 className="text-ink text-[18px] leading-[1.4] font-semibold">{title}</h2>
       {description && (
         <p className="text-muted mt-2 max-w-[280px] text-[14px] leading-[1.55]">{description}</p>
       )}
