@@ -6,7 +6,7 @@
  * 이걸 빠뜨리면 실패가 조용히 무시되고 빈 화면만 남습니다.
  */
 import { supabase } from '@/lib/supabase';
-import type { Job, Review } from '@/types';
+import type { Job, PersonalityTrait, Review } from '@/types';
 
 /** jobs 테이블의 한 행. DB 컬럼 그대로라 여기서만 snake_case 가 등장합니다. */
 export type JobRow = {
@@ -24,6 +24,8 @@ export type JobRow = {
   review_count: number | null;
   image_url: string | null;
   employer_id?: string | null;
+  // Phase 6 마이그레이션 전에 만들어진 행에는 이 컬럼이 없습니다.
+  wanted_traits?: string[] | null;
 };
 
 type ReviewRow = {
@@ -53,6 +55,7 @@ export function toJob(row: JobRow): Job {
     reviewCount: row.review_count ?? 0,
     imageUrl: row.image_url,
     employerId: row.employer_id ?? null,
+    wantedTraits: (row.wanted_traits as PersonalityTrait[] | null | undefined) ?? [],
   };
 }
 
@@ -103,4 +106,97 @@ export async function fetchReviews(jobId: string): Promise<Review[]> {
   if (error) throw error;
 
   return ((data ?? []) as ReviewRow[]).map(toReview);
+}
+
+/** 공고에 고를 수 있는 업종. 시드가 쓰는 값과 같아야 관심 직종이 맞물립니다. */
+export const JOB_CATEGORIES = [
+  '카페',
+  '음식점',
+  '편의점',
+  '판매',
+  '배달',
+  '물류',
+  '사무',
+  '과외',
+  '행사',
+  '주방',
+  '기타',
+] as const;
+
+/** 공고 작성 폼이 채우는 값. id·평점·리뷰수·주인은 서버가 정합니다. */
+export type NewJob = {
+  storeName: string;
+  category: string;
+  hourlyWage: number;
+  summary: string;
+  description: string;
+  address: string;
+  /** "월·수·금" — 가운뎃점 구분, 공백 없음 */
+  workDays: string;
+  /** "13:00 ~ 18:00" — 물결 앞뒤로 공백 하나씩 */
+  workHours: string;
+  benefits: string[];
+  wantedTraits: PersonalityTrait[];
+  imageUrl: string | null;
+};
+
+/**
+ * 시간 겹침 판정이 파싱하는 형식 그대로인지 확인합니다.
+ *
+ * CRITICAL: 형식이 틀려도 insert 는 성공합니다. 그 공고만 시간 필터에서
+ * 조용히 빠질 뿐이라 아무도 눈치채지 못합니다. 그래서 저장 직전에 막습니다.
+ */
+const WORK_DAYS_PATTERN = /^[월화수목금토일](·[월화수목금토일])*$/;
+const WORK_HOURS_PATTERN = /^([01]\d|2[0-4]):[0-5]\d ~ ([01]\d|2[0-4]):[0-5]\d$/;
+
+export function assertWorkFormat(workDays: string, workHours: string): void {
+  if (!WORK_DAYS_PATTERN.test(workDays)) {
+    throw new Error(`근무 요일 형식이 잘못됐습니다: "${workDays}" (예: 월·수·금)`);
+  }
+  if (!WORK_HOURS_PATTERN.test(workHours)) {
+    throw new Error(`근무 시간 형식이 잘못됐습니다: "${workHours}" (예: 13:00 ~ 18:00)`);
+  }
+}
+
+/**
+ * 공고 등록 (사업자).
+ *
+ * employer_id 를 보내지 않습니다 — 컬럼 default 가 auth.uid() 이고,
+ * RLS 의 with check (auth.uid() = employer_id) 가 남의 이름으로 올리는 것을 막습니다.
+ */
+export async function createJob(input: NewJob): Promise<Job> {
+  assertWorkFormat(input.workDays, input.workHours);
+
+  const { data, error } = await supabase
+    .from('jobs')
+    .insert({
+      store_name: input.storeName.trim(),
+      category: input.category,
+      hourly_wage: input.hourlyWage,
+      summary: input.summary.trim(),
+      description: input.description.trim(),
+      address: input.address.trim(),
+      work_days: input.workDays,
+      work_hours: input.workHours,
+      benefits: input.benefits,
+      wanted_traits: input.wantedTraits,
+      image_url: input.imageUrl,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+
+  return toJob(data as JobRow);
+}
+
+/** 내가 올린 공고 (사업자). 최신순. */
+export async function fetchMyJobs(employerId: string): Promise<Job[]> {
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*')
+    .eq('employer_id', employerId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+
+  return ((data ?? []) as JobRow[]).map(toJob);
 }
