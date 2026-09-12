@@ -71,7 +71,14 @@ export async function fetchSeekerProfiles(userIds: string[]): Promise<SeekerProf
 export type SeekerProfilePatch = Partial<
   Pick<
     SeekerProfile,
-    'nickname' | 'intro' | 'experience' | 'interests' | 'desiredWage' | 'mbti' | 'personalityTraits'
+    | 'nickname'
+    | 'intro'
+    | 'experience'
+    | 'interests'
+    | 'desiredWage'
+    | 'mbti'
+    | 'personalityTraits'
+    | 'avatarUrl'
   >
 >;
 
@@ -91,6 +98,8 @@ export async function saveSeekerProfile(
   if (patch.desiredWage !== undefined) row.desired_wage = patch.desiredWage;
   if (patch.mbti !== undefined) row.mbti = patch.mbti;
   if (patch.personalityTraits !== undefined) row.personality_traits = patch.personalityTraits;
+  // 업로드 훅이 채웁니다. 화면에서 직접 URL 을 넣지 마세요 — Storage 경로 규칙이 깨집니다.
+  if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
 
   const { data, error } = await supabase
     .from('seeker_profiles')
