@@ -8,6 +8,23 @@ import { useApplyTemplates } from '@/hooks/useApplyTemplates';
 import type { Job, MyApplication } from '@/types';
 
 const MAX_MESSAGE_LEN = 300;
+const MIN_MESSAGE_LEN = 20;
+/** 템플릿 저장 미리보기에 보여줄 앞부분 길이. 넘치면 말줄임표를 붙인다. */
+const TEMPLATE_PREVIEW_LEN = 100;
+
+/**
+ * 공백을 뺀 실제 글자 수. "   ㅁ   " 로 20자를 채우는 꼼수를 막는다.
+ *
+ * \s 만 지우면 전각 스페이스(U+3000) 같은 유니코드 공백이 통과하므로 \p{White_Space} 를 쓴다.
+ * 이 프로퍼티 이스케이프는 /u 플래그 없이는 문법 에러다 — g 와 함께 gu 로 둘 것.
+ *
+ * 자모만 반복하는 것("ㅁㅁㅁ…")도 성의가 없지만 검사하지 않는다.
+ * 정상 입력을 잘못 막는 쪽이 더 나쁘고, 사용자가 말한 꼼수는 공백 제거만으로 막힌다.
+ * 같은 이유로 이모지 20개도 통과시킨다.
+ */
+function meaningfulLength(text: string): number {
+  return text.replace(/\p{White_Space}/gu, '').length;
+}
 
 export type ApplyFormProps = { job: Job };
 
@@ -28,6 +45,15 @@ export function ApplyForm({ job }: ApplyFormProps) {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isApplying || submitted || existingApplication) return;
+
+    /*
+     * 버튼 비활성만으로는 부족하다. 템플릿 칩 삽입·붙여넣기·자동완성으로 상태가 바뀌는 사이
+     * 제출이 들어올 수 있고, form 은 Enter 로도 submit 된다. 제출 직전에 한 번 더 센다.
+     */
+    if (meaningfulLength(message) < MIN_MESSAGE_LEN) {
+      toast.error(`공백을 뺀 ${MIN_MESSAGE_LEN}자 이상 적어주세요`);
+      return;
+    }
 
     try {
       await apply(job.id, message);
@@ -84,6 +110,8 @@ export function ApplyForm({ job }: ApplyFormProps) {
     );
   }
 
+  const canSubmit = meaningfulLength(message) >= MIN_MESSAGE_LEN;
+
   return (
     <form onSubmit={handleSubmit} className="flex min-h-[calc(100dvh-56px)] flex-col">
       <section className="m-4 flex items-center gap-3 rounded-tile bg-surface p-4">
@@ -108,7 +136,11 @@ export function ApplyForm({ job }: ApplyFormProps) {
         className="sticky bottom-0 mt-6 border-t border-line bg-surface px-4 pt-3"
         style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
       >
-        <Button type="submit" size="lg" fullWidth loading={isApplying}>
+        {/*
+          비활성 이유는 버튼이 아니라 입력부 글자 수 줄이 말해 준다("20자 이상 (현재 N자)").
+          disabled 버튼에는 pointer-events 가 없어 툴팁도 토스트도 띄울 수 없기 때문이다.
+        */}
+        <Button type="submit" size="lg" fullWidth loading={isApplying} disabled={!canSubmit}>
           지원서 보내기
         </Button>
       </div>
@@ -198,6 +230,15 @@ function ApplyMessageField({
   // 로딩 중이거나 조회가 깨졌으면(테이블 없음 포함) 빈 줄이 남지 않게 행 자체를 그리지 않는다.
   const showChips = !isLoading && !isError && templates.length > 0;
 
+  const meaningfulCount = meaningfulLength(value);
+  /*
+   * 저장 버튼의 disabled 조건과 같은 기준(trim)으로 판단한다.
+   * 누를 수 없는 버튼 밑에 "이렇게 저장돼요" 가 떠 있으면 말이 안 된다.
+   */
+  const canSaveTemplate = value.trim().length > 0;
+  const preview =
+    value.length > TEMPLATE_PREVIEW_LEN ? `${value.slice(0, TEMPLATE_PREVIEW_LEN)}…` : value;
+
   return (
     <>
       {showChips && (
@@ -242,21 +283,49 @@ function ApplyMessageField({
       </div>
       <div className="mt-1.5 flex items-start justify-between gap-3">
         <p className="text-[12px] leading-[1.4] text-faint">닉네임과 함께 전달됩니다</p>
-        <p className="tabular shrink-0 text-[12px] leading-[1.4] text-faint">
-          <span className="sr-only">입력한 글자 수 </span>
-          {value.length} / {MAX_MESSAGE_LEN}
-        </p>
+        {/*
+          두 숫자가 다르다는 점이 핵심이다.
+          상한(300)은 입력한 그대로의 value.length 로 세고, 하한(20)은 공백을 뺀 수로 센다.
+          하나로 뭉뚱그리면 "300자 중 19자인데 왜 안 되지" 가 된다.
+          미달일 때만 하한 표기로 바꾸고, 채우면 원래의 N / 300 으로 돌아간다.
+          색은 faint↔muted 안에서만 움직인다 — 레드는 CTA 전용이다.
+        */}
+        {meaningfulCount < MIN_MESSAGE_LEN ? (
+          <p className="shrink-0 text-[12px] leading-[1.4] text-muted">
+            <span className="sr-only">공백을 뺀 </span>
+            {MIN_MESSAGE_LEN}자 이상 (현재 <span className="tabular">{meaningfulCount}</span>자)
+          </p>
+        ) : (
+          <p className="tabular shrink-0 text-[12px] leading-[1.4] text-faint">
+            <span className="sr-only">입력한 글자 수 </span>
+            {value.length} / {MAX_MESSAGE_LEN}
+          </p>
+        )}
       </div>
 
       <button
         type="button"
         onClick={() => void handleSave()}
-        disabled={value.trim().length === 0 || isSaving}
+        disabled={!canSaveTemplate || isSaving}
         className="-ml-1 mt-1 inline-flex h-11 items-center gap-1.5 px-1 text-[13px] font-semibold leading-[1.4] text-muted transition-transform duration-100 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:text-faint"
       >
         <BookmarkPlus size={15} aria-hidden />
         현재 내용을 템플릿으로 저장
       </button>
+
+      {/*
+        저장하면 무엇이 들어가는지 미리 보여 주는 박스다. 저장된 템플릿 목록이 아니다 —
+        목록은 위 칩 행이 담당한다. 본문이 비면 그리지 않아 빈 네모가 남지 않는다.
+        줄바꿈은 whitespace-pre-wrap 으로 살린다. 사용자가 쓴 글이므로 HTML 로 넣지 않는다.
+      */}
+      {canSaveTemplate && (
+        <div className="mt-1 rounded-md border border-line bg-app p-3">
+          <p className="text-[12px] leading-[1.4] text-faint">이렇게 저장돼요</p>
+          <p className="mt-1 whitespace-pre-wrap break-words text-[12px] leading-[1.5] text-muted">
+            {preview}
+          </p>
+        </div>
+      )}
     </>
   );
 }

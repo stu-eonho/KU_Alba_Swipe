@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CalendarClock, ChevronRight, ClipboardList, Heart, LogOut, PlayCircle, RotateCcw, UserRound } from 'lucide-react';
 import { ConfirmDialog as UiConfirmDialog, useToast as useGlobalToast } from '@/components/ui';
-import { Tutorial } from '@/features/onboarding';
 import { resetTutorial } from '@/features/onboarding/tutorialStorage';
 import { ConfirmDialog } from '@/features/settings/ConfirmDialog';
 import { Toast, useToast } from '@/features/settings/Toast';
@@ -39,7 +38,6 @@ export default function SettingsPage() {
   // 화면에 매달린 로컬 토스트가 아니라 전역 ToastProvider 로 띄운다.
   const globalToast = useGlobalToast();
   const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
-  const [showTutorial, setShowTutorial] = useState(false);
 
   if (!user) return null;
   const isSeeker = user.role === 'seeker';
@@ -74,9 +72,23 @@ export default function SettingsPage() {
     }
   }
 
+  /**
+   * PHASE8 G1-a — 여기서 바로 열지 않는다.
+   *
+   * 인터랙티브 튜토리얼은 **덱 위에서만** 돈다(Tutorial.tsx 의 startedOnDeck).
+   * /settings 에서 열면 앵커를 걸 덱이 없어 의도된 폴백인 옛날 슬라이드 4장이 떴다.
+   * 그래서 기록을 지우고 **덱으로 데려가기만** 한다. 거기 마운트되는 <Tutorial /> 이
+   * hasSeenTutorial === false 를 읽고 알아서 뜬다. 제어 컴포넌트를 쓸 이유가 없다.
+   *
+   * 이동만으로 정말 다시 뜨는가: 뜬다. router.tsx 가 <Tutorial /> 을 **덱 경로에서만**
+   * 마운트하도록 바뀌었다(PHASE8 G1). /settings 에서는 언마운트 상태이므로 덱 도착이
+   * 곧 새 마운트고, 그때 selfOpen = !hasSeenTutorial(...) 이 방금 지운 localStorage 를
+   * 다시 읽어 true 가 된다. 탭 전환으로 덱이 이미 살아 있는 경우는 존재하지 않는다 —
+   * 이 버튼은 /settings 에서만 눌리고, 그 화면에는 Tutorial 이 없다.
+   */
   function replayTutorial() {
     resetTutorial(userId);
-    setShowTutorial(true);
+    navigate(isSeeker ? '/' : '/employer/applicants');
   }
 
   return (
@@ -130,18 +142,6 @@ export default function SettingsPage() {
               label="찜한 가게"
               onClick={() => navigate('/wishlist')}
             />
-            <Divider />
-            <MenuRow
-              icon={<PlayCircle size={20} />}
-              label="튜토리얼 다시 보기"
-              onClick={replayTutorial}
-            />
-            <Divider />
-            <MenuRow
-              icon={<RotateCcw size={20} />}
-              label="스와이프 기록 초기화"
-              onClick={() => setOpenDialog('reset')}
-            />
           </>
         ) : (
           <MenuRow
@@ -150,6 +150,24 @@ export default function SettingsPage() {
             onClick={() => navigate('/notifications')}
           />
         )}
+        {/*
+          * PHASE8 G1-b — 역할 공통 구역.
+          * 이 두 행은 구직자 분기 안에만 있어서 구인자에게는 튜토리얼을 다시 볼 방법이
+          * 아예 없었다. 구인자 쪽에 복사해 넣으면 다음에 또 한쪽만 빠진다. 분기 밖으로 뺀다.
+          * 두 분기 모두 Divider 없이 끝나므로, 구분선은 여기서부터 이어 붙인다.
+          */}
+        <Divider />
+        <MenuRow
+          icon={<PlayCircle size={20} />}
+          label="튜토리얼 다시 보기"
+          onClick={replayTutorial}
+        />
+        <Divider />
+        <MenuRow
+          icon={<RotateCcw size={20} />}
+          label="스와이프 기록 초기화"
+          onClick={() => setOpenDialog('reset')}
+        />
         <Divider />
         <MenuRow
           icon={<LogOut size={20} />}
@@ -208,7 +226,11 @@ export default function SettingsPage() {
         }}
       />
 
-      <Tutorial userId={user.id} open={showTutorial} onClose={() => setShowTutorial(false)} />
+      {/*
+        * <Tutorial /> 을 여기에 두지 않는다(PHASE8 G1-a). 설정 화면에는 덱이 없어
+        * 스포트라이트를 걸 앵커가 없다. replayTutorial 이 덱으로 보내면 라우터가 그
+        * 경로에서 <Tutorial /> 을 새로 마운트한다(router.tsx 의 isTutorialDeckPath).
+        */}
       <Toast toast={toast} />
     </div>
   );

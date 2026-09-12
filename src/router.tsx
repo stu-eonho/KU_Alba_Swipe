@@ -16,12 +16,14 @@
  *
  * 탭바 찜 배지는 MainLayout에서 useWishlist().count로 연결한다.
  */
-import { createBrowserRouter, Navigate, Outlet, useMatches } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, useLocation, useMatches } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { AppShell, RequireAuth, RequireRole, useSmartBack } from '@/components/layout';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useAuth } from '@/lib/auth-context';
 import { Tutorial } from '@/features/onboarding';
+// 배럴은 A/B 공용이라 이번 Phase 에서 손대지 않는다. 새 헬퍼만 직접 경로로 가져온다.
+import { isTutorialDeckPath } from '@/features/onboarding/Tutorial';
 import EmployerJobsPage from '@/pages/EmployerJobsPage';
 import EmployerJobFormPage from '@/pages/EmployerJobFormPage';
 import { ProfileEditor } from '@/features/profile';
@@ -65,6 +67,7 @@ function PublicLayout() {
 function MainLayout() {
   const { user } = useAuth();
   const title = useRouteTitle();
+  const { pathname } = useLocation();
 
   if (user?.role === 'employer') {
     return (
@@ -73,16 +76,25 @@ function MainLayout() {
         {/*
           구인자 튜토리얼(F9). 역할은 Tutorial 이 useAuth()로 직접 읽으므로 prop 이 필요 없다.
           이 줄이 없으면 구인자에게는 튜토리얼이 아예 마운트되지 않는다.
+
+          PHASE8 G1 — **덱 화면(/employer/applicants)에서만** 마운트한다. 이 레이아웃은
+          /settings 와 /employer/* 전체가 공유하므로 라우트가 바뀌어도 언마운트되지 않는다.
+          Tutorial 은 selfOpen · startedOnDeck 을 마운트 시 한 번만 읽으니, 항상 달아 두면
+          ① 설정에서 "다시 보기"를 눌러 덱으로 와도 다시 읽히지 않아 아무 일이 없고
+          ② 로그인 직후 '/' 를 거쳐 리다이렉트되는 동안 마운트돼 startedOnDeck 이 false 로
+            굳어(스포트라이트 대신 슬라이드) 뜬다.
+          조건부로 달면 덱 도착이 곧 새 마운트라 둘 다 사라진다. 판정은 Tutorial 이
+          제 DECK_PATH 로 하므로 경로가 두 군데에 중복되지 않는다.
         */}
-        <Tutorial key={user.id} userId={user.id} />
+        {isTutorialDeckPath(pathname, 'employer') && <Tutorial key={user.id} userId={user.id} />}
       </AppShell>
     );
   }
 
-  return <SeekerMainLayout title={title} />;
+  return <SeekerMainLayout title={title} pathname={pathname} />;
 }
 
-function SeekerMainLayout({ title }: { title?: string }) {
+function SeekerMainLayout({ title, pathname }: { title?: string; pathname: string }) {
   // 찜 개수 배지. ['swipes'] 캐시를 공유하므로 찜 화면과 항상 같은 값을 보여준다.
   const { count } = useWishlist();
   const { user } = useAuth();
@@ -90,8 +102,8 @@ function SeekerMainLayout({ title }: { title?: string }) {
   return (
     <AppShell title={title} role="seeker" wishlistCount={count} topBarRight={<NotificationBell />}>
       <Outlet />
-      {/* 첫 가입자 튜토리얼. localStorage로 자체 판단하므로 조건 없이 둔다 (F6) */}
-      <Tutorial key={user.id} userId={user.id} />
+      {/* 첫 가입자 튜토리얼 (F6). 덱('/')에서만 마운트하는 이유는 위 구인자 분기 주석 참고. */}
+      {isTutorialDeckPath(pathname, 'seeker') && <Tutorial key={user.id} userId={user.id} />}
     </AppShell>
   );
 }

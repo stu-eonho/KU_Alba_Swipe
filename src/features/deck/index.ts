@@ -25,4 +25,13 @@ export type { CategoryVisual } from './categoryVisual';
 export { RegionFilterSheet } from './RegionFilterSheet';
 export type { RegionFilterSheetProps } from './RegionFilterSheet';
 
-export { getRegions, setRegions, REGION_STORAGE_KEY } from './regionStorage';
+export {
+  getRegions,
+  setRegions,
+  REGION_STORAGE_KEY,
+  REGION_SEP,
+  parseRegion,
+  makeRegion,
+  citiesOf,
+  areaOfAddress,
+} from './regionStorage';

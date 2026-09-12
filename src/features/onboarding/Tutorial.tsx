@@ -59,6 +59,29 @@ function samePath(a: string, b: string): boolean {
 }
 
 /**
+ * PHASE8 G1 — 지금 경로가 **그 역할의 덱 화면**인가.
+ *
+ * 라우터(MainLayout · SeekerMainLayout)가 `<Tutorial />` 을 **여기서만** 마운트하는 데
+ * 쓴다. 조건부 마운트가 튜토리얼 3종 증상을 한꺼번에 푼다:
+ *
+ *  ① 설정 > "다시 보기"(G1-a) — `<Tutorial />` 은 레이아웃에 달려 있고 /settings 도 같은
+ *    레이아웃 아래라, 덱으로 이동해도 레이아웃은 언마운트되지 않는다. `selfOpen` 과
+ *    `startedOnDeck` 은 `useState(() => ...)` 로 **마운트 시 한 번만** 읽으므로
+ *    resetTutorial() 후 이동해도 아무 일이 없었다. 설정에서는 아예 언마운트해 두면
+ *    덱에 도착하는 순간이 **항상 새 마운트**가 되어 둘 다 다시 읽힌다.
+ *  ② 구인자 첫 진입(G1-c) — LoginPage 는 역할과 무관하게 '/' 로 보내고 RequireRole 이
+ *    /employer/applicants 로 되돌린다. 레이아웃은 그 리다이렉트로 언마운트되지 않으므로
+ *    예전에는 Tutorial 이 '/' 에서 마운트돼 `startedOnDeck` 이 false 로 굳었다
+ *    (= 스포트라이트 대신 슬라이드 폴백). 이제 '/' 통과 중에는 마운트되지 않는다.
+ *  ③ 덱이 아닌 곳에서 뜨던 슬라이드 폴백이 사실상 사라진다. 폴백 자체는 그대로 남는다 —
+ *    킬 스위치(TUTORIAL_INTERACTIVE)와 InteractiveTutorial 이 던졌을 때의 2단 폴백은
+ *    건드리지 않았다.
+ */
+export function isTutorialDeckPath(pathname: string, role: UserRole): boolean {
+  return samePath(pathname, DECK_PATH[role] ?? DECK_PATH.seeker);
+}
+
+/**
  * 역할별 단계·슬라이드. 배열이 비었거나 읽다가 던지면 **구직자 기본값**으로 되돌린다.
  * 구인자 쪽이 깨져도 구직자 튜토리얼은 멀쩡해야 한다(CRITICAL).
  */
@@ -134,9 +157,15 @@ export function Tutorial({ userId, open, onClose, role: roleProp }: TutorialProp
   const { steps, slides } = pickContent(role);
   const useInteractive = TUTORIAL_INTERACTIVE && !interactiveFailed && startedOnDeck;
 
+  /*
+   * key 가 **필수**다. 두 분기 모두 루트가 SilentBoundary 라, key 가 없으면 React 가
+   * 같은 위치의 같은 타입으로 보고 인스턴스를 재사용한다. 인터랙티브가 던져
+   * failed:true 가 된 바운더리를 그대로 물려받으면 폴백 슬라이드까지 null 로 사라진다 —
+   * 2단 폴백이 1단으로 주저앉는다. key 를 달아 새 인스턴스로 만든다.
+   */
   if (useInteractive) {
     return (
-      <SilentBoundary onError={() => setInteractiveFailed(true)}>
+      <SilentBoundary key="interactive" onError={() => setInteractiveFailed(true)}>
         <InteractiveTutorial userId={userId} role={role} steps={steps} open onClose={handleClose} />
       </SilentBoundary>
     );
@@ -144,7 +173,7 @@ export function Tutorial({ userId, open, onClose, role: roleProp }: TutorialProp
 
   // 폴백. 여기서 또 던지면 아무것도 렌더하지 않는다(조용히 사라진다).
   return (
-    <SilentBoundary>
+    <SilentBoundary key="slides">
       <SlideTutorial userId={userId} role={role} slides={slides} open onClose={handleClose} />
     </SilentBoundary>
   );
