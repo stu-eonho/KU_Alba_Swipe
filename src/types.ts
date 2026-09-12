@@ -30,6 +30,16 @@ export type Job = {
   description: string;
   /** 가게 주소 — 카드 뒷면 */
   address: string;
+  /**
+   * 시·도 단위 지역 ("서울", "경기", "부산"…). 지역 필터의 기준입니다.
+   *
+   * 시·군·구까지 쪼개지 않는 이유는 데이터가 성북구에 몰려 있어서입니다.
+   * 구 단위로 거르면 어느 구를 골라도 0건이 나와 필터가 죽어 보입니다.
+   *
+   * DB 컬럼이 비어 있으면 주소 첫 조각으로 채웁니다. 마이그레이션 전에도
+   * 값이 항상 들어 있으므로 화면은 빈 문자열을 걱정하지 않아도 됩니다.
+   */
+  region: string;
   /** 예: "월·수·금" */
   workDays: string;
   /** 예: "09:00 ~ 14:00" */
@@ -270,3 +280,26 @@ export type Offer = {
   direction: OfferDirection;
   createdAt: string;
 };
+
+/** 지역 필터에 쓰는 시·도 17개. 화면의 칩 목록이 이 순서를 따릅니다. */
+export const REGIONS = [
+  '서울',
+  '경기',
+  '인천',
+  '부산',
+  '대구',
+  '대전',
+  '광주',
+  '울산',
+  '세종',
+  '강원',
+  '충북',
+  '충남',
+  '전북',
+  '전남',
+  '경북',
+  '경남',
+  '제주',
+] as const;
+
+export type Region = (typeof REGIONS)[number];
