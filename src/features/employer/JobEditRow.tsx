@@ -20,6 +20,7 @@ import {
   type PersonalityTrait,
   type Weekday,
 } from '@/types';
+import { MIN_HOURLY_WAGE, minWageMessage } from '@/lib/wage';
 
 const TIME_OPTIONS = Array.from({ length: 49 }, (_, index) => index * 30);
 const BENEFIT_OPTIONS = [
@@ -32,7 +33,6 @@ const BENEFIT_OPTIONS = [
   '교육지원',
   '유니폼제공',
 ];
-const MIN_WAGE = 10_320;
 const MAX_TRAITS = 5;
 
 function formatClock(minutes: number): string {
@@ -87,8 +87,7 @@ export function JobEditRow({ job, onSave, isSaving }: Props) {
     const wage = Number(hourlyWage);
 
     if (storeName.trim().length < 2) return setError('가게 이름을 2자 이상 입력해 주세요');
-    if (!Number.isFinite(wage) || wage < MIN_WAGE)
-      return setError(`시급은 ${MIN_WAGE.toLocaleString()}원 이상이어야 합니다`);
+    if (!Number.isFinite(wage) || wage < MIN_HOURLY_WAGE) return setError(minWageMessage());
     if (summary.trim().length < 5) return setError('한 줄 요약을 5자 이상 입력해 주세요');
     if (address.trim().length < 5) return setError('주소를 입력해 주세요');
     if (days.length === 0) return setError('근무 요일을 하나 이상 선택해 주세요');
@@ -117,7 +116,11 @@ export function JobEditRow({ job, onSave, isSaving }: Props) {
   }
 
   return (
-    <li className="border-t border-line-soft">
+    /*
+     * 왼쪽 3px 바 + 위아래 여백. 행이 헤어라인만으로 나뉘면 스크롤할 때
+     * 어디서 어디까지가 한 공고인지 읽히지 않습니다.
+     */
+    <li className="border-t border-line-soft py-1 pl-3 [border-left:3px_solid_var(--color-line-soft)]">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
