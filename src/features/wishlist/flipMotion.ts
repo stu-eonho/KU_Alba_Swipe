@@ -18,11 +18,14 @@ export const PERSPECTIVE_PX = 1200;
 
 /**
  * 폴백 스위치 — SPEC `<flip_interaction>`이 명시적으로 허용하는 폴백.
- * layout 애니메이션과 rotateY가 충돌해 카드가 찌그러지거나 깜빡이면
- * **이 한 줄을 false로 바꾼다.** 회전만 빠지고 확대·백드롭·닫기는 그대로 동작한다.
- * 깨진 3D보다 깔끔한 확대가 데모에서 낫다.
+ *
+ * 2026-09-12 실기기 확인 결과 **false로 확정.**
+ * 회전이 "못생기고 약간 깜빡인다"는 판단이었다. 회전만 빠지고
+ * 확대·백드롭·닫기·접근성은 그대로 동작한다. 깨진 3D보다 깔끔한 확대가 낫다.
+ *
+ * 되돌리려면 true로 바꾸면 된다 — 다른 파일은 손댈 필요 없다.
  */
-export const FLIP_ENABLED = true;
+export const FLIP_ENABLED = false;
 
 /** 확대·뒤집기 공통 transition (motion) */
 export const FLIP_TRANSITION = { duration: FLIP_MS / 1000, ease: FLIP_EASE } as const;

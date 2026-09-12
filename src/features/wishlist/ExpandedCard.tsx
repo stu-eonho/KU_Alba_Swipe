@@ -165,8 +165,10 @@ export function ExpandedCard({ job, onClose, reviews }: ExpandedCardProps) {
           <motion.div
             layoutId={gridCardLayoutId(job.id)}
             transition={transition}
-            /* perspective는 transform이 아니라 CSS 속성이라 layout projection과 충돌하지 않는다 */
-            style={{ perspective: PERSPECTIVE_PX }}
+            /* perspective는 transform이 아니라 CSS 속성이라 layout projection과 충돌하지 않는다.
+               회전을 끈 폴백에서는 3D 컨텍스트를 아예 만들지 않는다 — 불필요한 합성 레이어가
+               확대 도중 깜빡임을 만들 수 있다. */
+            style={flip ? { perspective: PERSPECTIVE_PX } : undefined}
             className="rounded-tile bg-surface shadow-card pointer-events-auto relative h-[min(70dvh,520px)] w-[calc(100%-48px)] max-w-[432px] overflow-hidden"
           >
             <motion.div
@@ -179,10 +181,11 @@ export function ExpandedCard({ job, onClose, reviews }: ExpandedCardProps) {
               initial={{ rotateY: 0 }}
               animate={{ rotateY: flip ? 180 : 0 }}
               transition={transition}
-              style={{
-                transformStyle: 'preserve-3d',
-                WebkitTransformStyle: 'preserve-3d',
-              }}
+              style={
+                flip
+                  ? { transformStyle: 'preserve-3d', WebkitTransformStyle: 'preserve-3d' }
+                  : undefined
+              }
             >
               <span id={labelId} className="sr-only">
                 {jobAriaLabel(job)} 상세
@@ -197,10 +200,11 @@ export function ExpandedCard({ job, onClose, reviews }: ExpandedCardProps) {
 
               {/* 뒷면 — 초기값 rotateY(180deg) */}
               <div
-                style={{
-                  ...FACE_STYLE,
-                  transform: flip ? 'rotateY(180deg)' : undefined,
-                }}
+                style={
+                  flip
+                    ? { ...FACE_STYLE, transform: 'rotateY(180deg)' }
+                    : { position: 'absolute', inset: 0, overflow: 'hidden' }
+                }
               >
                 <BackFace job={job} reviews={reviews} onClose={onClose} onBeforeApply={onClose} />
               </div>
