@@ -12,6 +12,7 @@ import {
   type SeekerProfile,
 } from '@/types';
 import { ProfileAvatar } from './ProfileAvatar';
+import { MAX_INTRO_LENGTH } from '@/lib/profile-limits';
 
 const CATEGORIES = [
   '카페',
@@ -157,10 +158,10 @@ function ProfileForm({
         <Textarea
           label="자기소개"
           value={intro}
-          maxLength={500}
+          maxLength={MAX_INTRO_LENGTH}
           rows={6}
-          onChange={(event) => setIntro(event.target.value.slice(0, 500))}
-          hint={`${intro.length} / 500`}
+          onChange={(event) => setIntro(event.target.value.slice(0, MAX_INTRO_LENGTH))}
+          hint={`${intro.length} / ${MAX_INTRO_LENGTH}`}
           placeholder="어떤 일을 해봤는지, 언제 일할 수 있는지 적어주세요"
         />
 
