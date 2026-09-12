@@ -8,6 +8,7 @@
  *   protected : /, /wishlist, /settings    → RequireAuth + MainLayout (탑바 + 탭바)
  *   protected : /employer/held             → 구인자 보류 지원자 (PHASE4 B-2)
  *   protected : /apply/:jobId              → RequireAuth + FullscreenLayout (탭바 없음, 뒤로가기만)
+ *   protected : /jobs/:jobId               → 홈 덱 카드 탭 → 공고 상세 (같은 FullscreenLayout)
  *   * → / 로 리다이렉트 (404 전용 화면을 만들지 않는다)
  *
  * 화면 제목은 라우트의 handle.title에서 온다. 데이터에 따라 바꿔야 하면
@@ -30,6 +31,7 @@ import { IconButton } from '@/components/ui';
 import HomeDeckPage from '@/pages/HomeDeckPage';
 import WishlistPage from '@/pages/WishlistPage';
 import ApplyPage from '@/pages/ApplyPage';
+import JobDetailPage from '@/pages/JobDetailPage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import SettingsPage from '@/pages/SettingsPage';
@@ -193,6 +195,9 @@ export const router = createBrowserRouter([
             element: <RequireRole role="seeker" redirectTo="/employer/applicants" />,
             children: [
               { path: '/apply/:jobId', element: <ApplyPage />, handle: { title: '지원하기' } },
+              // 홈 덱에서 카드를 탭하면 확대 오버레이가 아니라 이 화면으로 이동한다 (PHASE7 F3).
+              // 지금은 RequireAuth 안이다 — 비로그인 공유 링크는 범위 밖.
+              { path: '/jobs/:jobId', element: <JobDetailPage />, handle: { title: '공고 상세' } },
             ],
           },
           {

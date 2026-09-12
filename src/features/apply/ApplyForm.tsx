@@ -17,7 +17,12 @@ export function ApplyForm({ job }: ApplyFormProps) {
     job.id,
   );
   const [message, setMessage] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  /*
+   * 제출 결과. 'new' 는 방금 내가 보낸 것, 'existing' 은 이미 보내져 있던 것이다.
+   * 두 경우의 완료 화면 문구가 다르므로 boolean 으로는 구분할 수 없다 —
+   * 방금 보냈는데 "이미 지원했어요" 가 뜨던 버그가 여기서 나왔다.
+   */
+  const [submitted, setSubmitted] = useState<'new' | 'existing' | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -25,14 +30,14 @@ export function ApplyForm({ job }: ApplyFormProps) {
 
     try {
       await apply(job.id, message);
-      setSubmitted(true);
+      setSubmitted('new');
       toast.success('지원이 완료됐어요!');
       await retryCheck();
     } catch {
       // 다른 탭에서 먼저 제출한 경우에도 서버 상태를 다시 읽어 완료 화면으로 수렴한다.
       const refreshed = await retryCheck();
       if (refreshed.data) {
-        setSubmitted(true);
+        setSubmitted('existing');
         toast.success('이미 지원을 완료한 가게예요');
         return;
       }
@@ -61,6 +66,7 @@ export function ApplyForm({ job }: ApplyFormProps) {
     return (
       <ApplyComplete
         application={existingApplication}
+        isNew={submitted === 'new'}
         onView={() =>
           navigate(
             existingApplication
@@ -128,10 +134,13 @@ function ApplyCheckState({ label }: { label: string }) {
 
 function ApplyComplete({
   application,
+  isNew,
   onView,
   onBack,
 }: {
   application: MyApplication | null;
+  /** 방금 이 화면에서 보냈는지. 화면에 들어올 때부터 지원돼 있었으면 false. */
+  isNew: boolean;
   onView: () => void;
   onBack: () => void;
 }) {
@@ -142,7 +151,7 @@ function ApplyComplete({
       </div>
       <h2 className="mt-5 text-[18px] font-semibold text-ink">지원 완료</h2>
       <p className="mt-2 text-[14px] leading-[1.6] text-muted">
-        {application?.job.storeName ?? '이 가게'}에 이미 지원했어요.
+        {application?.job.storeName ?? '이 가게'}에 {isNew ? '지원했어요' : '이미 지원했어요'}.
         <br />
         보낸 내용과 진행 상태를 확인할 수 있어요.
       </p>

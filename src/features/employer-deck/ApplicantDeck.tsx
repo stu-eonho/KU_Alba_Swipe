@@ -29,6 +29,8 @@ import { UsersRound } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import type { ApplicantEntry, SwipeDirection } from '@/types';
 import { FLY_MS, REDUCED_FADE_MS, STACK_DEPTH, swipeHaptic } from '@/features/deck/useSwipeGesture';
+/* 튜토리얼 신호만 가져온다. 데이터 모듈이라 컴포넌트가 딸려오지 않는다 (PHASE7 F9) */
+import { emitTutorialSwipe } from '@/features/onboarding/tutorialSteps';
 import { ApplicantDeckCard } from './ApplicantDeckCard';
 import { ApplicantSwipeControls } from './ApplicantSwipeControls';
 
@@ -104,6 +106,13 @@ export function ApplicantDeck({
 
       onDecide?.(entry.seeker.id, direction, entry.job.id);
 
+      /*
+       * PHASE7 F9 — 구인자 튜토리얼 2단계가 "실제로 오른쪽으로 밀기"를 기다린다.
+       * 덱 동작은 그대로다. 이 함수는 내부에서 전부 try/catch 하고, 듣는 사람이 없으면
+       * 아무 일도 일어나지 않는다. (구직자 덱은 HomeDeckPage 가 같은 신호를 쏜다)
+       */
+      emitTutorialSwipe(direction);
+
       const flyMs = prefersReduced ? REDUCED_FADE_MS : FLY_MS;
       const timer = window.setTimeout(() => {
         setExiting((prev) => prev.filter((item) => item.entry.id !== entry.id));
@@ -151,7 +160,11 @@ export function ApplicantDeck({
 
   return (
     <div className={clsx('flex flex-col items-center', className)}>
-      <div className="relative mx-auto mt-4 aspect-[3/4] w-[calc(100%-32px)] max-w-[448px]">
+      {/* data-tour — 튜토리얼 스포트라이트 앵커. 카드가 아니라 스택 영역 전체다 (PHASE7 F9) */}
+      <div
+        data-tour="applicant-deck"
+        className="relative mx-auto mt-4 aspect-[3/4] w-[calc(100%-32px)] max-w-[448px]"
+      >
         {showEmpty ? (
           <div className="flex h-full items-center justify-center">
             <EmptyState

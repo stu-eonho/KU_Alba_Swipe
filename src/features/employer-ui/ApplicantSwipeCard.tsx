@@ -17,6 +17,7 @@ import { Chip } from '@/components/ui';
 import { ProfileAvatar } from '@/features/profile';
 import type { ApplicantEntry } from '@/types';
 import { formatApplicationDate } from './applicationPresentation';
+import { SeekerRatingSummary } from './SeekerRating';
 
 /** 칩 줄이 두 줄로 늘어나면 고정 높이가 깨진다. 각 줄 최대 개수를 못 박는다. */
 const MAX_TRAITS = 3;
@@ -55,7 +56,11 @@ export function ApplicantSwipeCard({ entry, className }: ApplicantSwipeCardProps
           <p className="clamp-1 text-[18px] leading-tight font-semibold text-ink">
             {seeker.nickname}
           </p>
-          <p className="clamp-1 mt-1 text-[12px] text-faint">{job.storeName} 지원</p>
+          <div className="mt-1 flex items-center gap-1.5">
+            <p className="clamp-1 min-w-0 text-[12px] text-faint">{job.storeName} 지원</p>
+            {/* 평균 별점만. 스와이프 중에 누를 일이 없어 입력은 상세 화면에만 있다 */}
+            <SeekerRatingSummary seekerId={seeker.id} className="shrink-0" />
+          </div>
         </div>
       </div>
 

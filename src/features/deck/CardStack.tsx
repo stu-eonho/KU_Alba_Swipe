@@ -19,7 +19,7 @@ import { useReducedMotion } from 'motion/react';
 import { SearchX } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import type { Job, SwipeDirection } from '@/types';
-import { gridCardLayoutId } from '@/features/wishlist/GridCard';
+import { jobImageUrl } from './categoryVisual';
 import { SwipeCard } from './SwipeCard';
 import { SwipeControls } from './SwipeControls';
 import { FLY_MS, REDUCED_FADE_MS, STACK_DEPTH, swipeHaptic } from './useSwipeGesture';
@@ -40,14 +40,8 @@ export type CardStackProps = {
    * 여기서 실패해도 카드를 되돌리지 말 것.
    */
   onSwipe?: (job: Job, direction: SwipeDirection) => void;
-  /** 맨 위 카드를 탭했을 때 — 상세 카드를 연다 */
+  /** 맨 위 카드를 탭했을 때 — `/jobs/:jobId` 상세 화면으로 이동한다 (PHASE7 F3) */
   onCardTap?: (job: Job) => void;
-  /**
-   * 상세 카드가 열려 있는 공고 id.
-   * 해당 카드는 빈 자리로 대체되고(= layoutId 주체를 상세 카드 하나로 고정),
-   * 그 동안 키보드 단축키와 컨트롤 버튼이 잠긴다.
-   */
-  expandedJobId?: string | null;
   className?: string;
 };
 
@@ -55,7 +49,6 @@ export function CardStack({
   jobs,
   onSwipe,
   onCardTap,
-  expandedJobId = null,
   className,
 }: CardStackProps) {
   const [exiting, setExiting] = useState<ExitingCard[]>([]);
@@ -117,11 +110,10 @@ export function CardStack({
 
   // 키보드: ArrowLeft = 관심 없음, ArrowRight = 찜
   useEffect(() => {
-    // 상세 카드가 열려 있으면 덱 단축키를 아예 달지 않는다.
-    // ExpandedCard가 Escape를 capture 단계에서 먹는 것과 같은 목적 — 뒤에 있는
-    // 덱이 조작되면 카드를 닫았을 때 다른 공고가 떠 있다.
-    if (expandedJobId) return;
-
+    /*
+     * 상세는 이제 오버레이가 아니라 별도 라우트(/jobs/:jobId)다. 그 화면에서는
+     * 이 컴포넌트 자체가 언마운트되므로 리스너도 같이 사라진다 — 따로 잠글 것이 없다.
+     */
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -141,16 +133,17 @@ export function CardStack({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [commitSwipe, expandedJobId]);
+  }, [commitSwipe]);
 
   // 다음 카드 이미지를 미리 디코딩한다. 넘긴 뒤 로드되면 데모에서 제일 티 난다.
   useEffect(() => {
     jobs.slice(1, 1 + PREFETCH_COUNT).forEach((job) => {
-      if (!job.imageUrl) return;
-      if (prefetchedRef.current.has(job.imageUrl)) return; // 연속 스와이프 시 중복 요청 방지
-      prefetchedRef.current.add(job.imageUrl);
+      // 사진이 없는 공고도 업종 기본 사진을 그리므로 그쪽을 데워 둔다.
+      const src = jobImageUrl(job);
+      if (prefetchedRef.current.has(src)) return; // 연속 스와이프 시 중복 요청 방지
+      prefetchedRef.current.add(src);
       const img = new Image();
-      img.src = job.imageUrl;
+      img.src = src;
     });
   }, [jobs]);
 
@@ -189,45 +182,30 @@ export function CardStack({
             />
           </div>
         ) : (
-          cards.map((card, i) =>
-            card.job.id === expandedJobId ? (
-              /*
-               * 상세 카드가 이 공고를 확대 중 — SwipeCard를 언마운트하고 자리만 남긴다.
-               * CRITICAL: 같은 layoutId를 가진 요소가 동시에 둘 살아 있으면 motion이
-               * 주체를 정하지 못해 카드가 다른 카드를 뚫고 나온다. opacity로 숨기는
-               * 것만으로는 요소가 살아 있어 해결되지 않는다 (찜 격자와 같은 처리).
-               * key와 배열 위치를 유지해 뒤 카드들의 depth는 그대로 둔다.
-               */
-              <div key={card.job.id} className="absolute inset-0" aria-hidden />
-            ) : (
-              <SwipeCard
-                key={card.job.id}
-                job={card.job}
-                depth={card.depth}
-                exitDirection={card.direction}
-                onCommit={commitSwipe}
-                onTap={() => onCardTap?.(card.job)}
-                // 맨 위 카드만 상세 카드와 layoutId를 공유한다
-                layoutId={card.depth === 0 ? gridCardLayoutId(card.job.id) : undefined}
-                zIndex={cards.length - i}
-              />
-            ),
-          )
+          cards.map((card, i) => (
+            /*
+             * CRITICAL: 여기서 layoutId를 주지 않는다. 홈 상세는 확대 오버레이가 아니라
+             * 별도 화면이라 짝이 없고, 찜 격자가 같은 문자열(`card-<id>`)을 계속 쓴다.
+             */
+            <SwipeCard
+              key={card.job.id}
+              job={card.job}
+              depth={card.depth}
+              exitDirection={card.direction}
+              onCommit={commitSwipe}
+              onTap={() => onCardTap?.(card.job)}
+              zIndex={cards.length - i}
+            />
+          ))
         )}
       </div>
 
       {/*
         키보드·스크린리더용 상세 보기 진입점. 포인터 사용자는 카드를 탭한다.
-        CardStack이 들고 있는 이유: 상세가 열리면 맨 위 SwipeCard가 언마운트되므로
-        버튼이 카드 안에 있으면 닫은 뒤 포커스를 되돌릴 DOM 노드가 사라진다.
+        카드 바깥에 두는 이유: 카드는 스와이프마다 교체되므로 진입점이 흔들린다.
       */}
       {!showEmpty && topJob && (
-        <button
-          type="button"
-          className="sr-only"
-          onClick={() => onCardTap?.(topJob)}
-          disabled={Boolean(expandedJobId)}
-        >
+        <button type="button" className="sr-only" onClick={() => onCardTap?.(topJob)}>
           {topJob.storeName} 상세 보기
         </button>
       )}
@@ -236,9 +214,7 @@ export function CardStack({
         <SwipeControls
           onNope={() => commitSwipe('left')}
           onLike={() => commitSwipe('right')}
-          // 상세가 열려 있으면 백드롭에 가려 보이지도 않지만, 키보드로는 여전히
-          // 닿을 수 있으므로 명시적으로 잠근다
-          disabled={exhausted || Boolean(expandedJobId)}
+          disabled={exhausted}
         />
       )}
 

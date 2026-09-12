@@ -4,6 +4,7 @@ import { Button, Chip, IconButton } from '@/components/ui';
 import { ProfileAvatar } from '@/features/profile';
 import type { ApplicantEntry, ApplicationStatus, Mbti, PersonalityTrait } from '@/types';
 import { APPLICATION_STATUS_LABEL } from './applicationPresentation';
+import { SeekerRating } from './SeekerRating';
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -102,6 +103,11 @@ export function ApplicantDetail({
               </p>
             </div>
           </div>
+
+          <section className="border-line-soft mt-5 border-t pt-5">
+            <h3 className="text-[14px] font-semibold text-ink">이 지원자 평가하기</h3>
+            <SeekerRating seekerId={entry.seeker.id} className="mt-2" />
+          </section>
 
           <DetailSection title="자기소개" text={profile?.intro} empty="작성한 자기소개가 없어요" />
           <DetailSection title="경력" text={profile?.experience} empty="등록한 경력이 없어요" />

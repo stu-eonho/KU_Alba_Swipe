@@ -30,12 +30,14 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { X } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui';
+import type { UserRole } from '@/types';
 import { markTutorialSeen } from './tutorialStorage';
 import {
   INTERACTIVE_STEPS,
   TUTORIAL_SWIPE_EVENT,
   TUTORIAL_WAIT_TIMEOUT_MS,
   emitTutorialActive,
+  type TutorialStep,
   type TutorialSwipeDetail,
 } from './tutorialSteps';
 import { useAnchorRect, useViewportHeight, type AnchorRect } from './useAnchorRect';
@@ -68,9 +70,24 @@ export type InteractiveTutorialProps = {
   /** 생략하면 localStorage 로 스스로 판단한다(Tutorial.tsx 가 넘겨준다). */
   open: boolean;
   onClose: () => void;
+  /**
+   * PHASE7 F9 — 역할별 단계 배열. 생략하면 구직자용.
+   * **엔진은 이 배열만 갈아끼우면 된다.** 새 컴포넌트를 만들지 않는다.
+   */
+  steps?: readonly TutorialStep[];
+  /** "봤음"을 어느 역할 키에 기록할지. 생략하면 구직자. */
+  role?: UserRole;
 };
 
-export function InteractiveTutorial({ userId, open, onClose }: InteractiveTutorialProps) {
+export function InteractiveTutorial({
+  userId,
+  open,
+  onClose,
+  steps: stepsProp,
+  role = 'seeker',
+}: InteractiveTutorialProps) {
+  /* 빈 배열이 들어오면 step 이 undefined 가 되어 렌더가 던진다. 구직자용으로 되돌린다. */
+  const steps = stepsProp && stepsProp.length > 0 ? stepsProp : INTERACTIVE_STEPS;
   const [index, setIndex] = useState(0);
   /**
    * "다음"이 열린 단계의 id. 기다리는 단계에서만 의미가 있다.
@@ -83,17 +100,17 @@ export function InteractiveTutorial({ userId, open, onClose }: InteractiveTutori
   const titleId = useId();
   const bodyId = useId();
 
-  const step = INTERACTIVE_STEPS[index] ?? INTERACTIVE_STEPS[0];
-  const isLast = index === INTERACTIVE_STEPS.length - 1;
+  const step = steps[index] ?? steps[0];
+  const isLast = index === steps.length - 1;
 
   const anchorRect = useAnchorRect(open ? step.anchor : null, open);
   const viewportHeight = useViewportHeight(open);
 
   const close = useCallback(() => {
-    markTutorialSeen(userId);
+    markTutorialSeen(userId, role);
     setIndex(0);
     onClose();
-  }, [onClose, userId]);
+  }, [onClose, role, userId]);
 
   const closeRef = useRef(close);
   useEffect(() => {
@@ -101,8 +118,8 @@ export function InteractiveTutorial({ userId, open, onClose }: InteractiveTutori
   }, [close]);
 
   const goNext = useCallback(() => {
-    setIndex((i) => Math.min(i + 1, INTERACTIVE_STEPS.length - 1));
-  }, []);
+    setIndex((i) => Math.min(i + 1, steps.length - 1));
+  }, [steps.length]);
 
   /** 튜토리얼이 떠 있는 동안 덱의 카드 탭(상세 열기)을 막는다 — HomeDeckPage 가 듣는다. */
   useEffect(() => {
@@ -324,7 +341,7 @@ export function InteractiveTutorial({ userId, open, onClose }: InteractiveTutori
             <div className="mt-5 flex flex-col items-center gap-4">
               {/* 점 인디케이터 — 장식. 보조기술에는 아래 live 영역으로 전달한다 */}
               <div className="flex items-center gap-1.5" aria-hidden>
-                {INTERACTIVE_STEPS.map((s, i) => (
+                {steps.map((s, i) => (
                   <span
                     key={s.id}
                     className={
@@ -353,7 +370,7 @@ export function InteractiveTutorial({ userId, open, onClose }: InteractiveTutori
       </div>
 
       <p className="sr-only" aria-live="polite">
-        {INTERACTIVE_STEPS.length}단계 중 {index + 1}단계. {step.title}. {step.body}
+        {steps.length}단계 중 {index + 1}단계. {step.title}. {step.body}
       </p>
     </div>
   );

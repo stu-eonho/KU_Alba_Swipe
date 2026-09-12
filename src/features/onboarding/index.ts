@@ -17,6 +17,9 @@ export type { InteractiveTutorialProps } from './InteractiveTutorial';
 export { TUTORIAL_SLIDES } from './tutorialSlides';
 export type { TutorialSlide } from './tutorialSlides';
 
+/** PHASE7 F9 — 구인자용 단계/슬라이드. Tutorial 이 role 로 골라 쓴다. */
+export { EMPLOYER_STEPS, EMPLOYER_SLIDES } from './employerSteps';
+
 /** 덱이 스와이프를 확정할 때 호출한다(HomeDeckPage). 새 제스처 이벤트를 만들지 않는다. */
 export {
   INTERACTIVE_STEPS,
@@ -29,6 +32,7 @@ export {
 export type { TutorialStep, TutorialActiveDetail, TutorialSwipeDetail } from './tutorialSteps';
 
 export {
+  TUTORIAL_SEEN_KEY_ROOT,
   TUTORIAL_SEEN_KEY_PREFIX,
   tutorialSeenKey,
   hasSeenTutorial,

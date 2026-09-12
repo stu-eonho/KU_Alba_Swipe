@@ -19,6 +19,7 @@ import { Clock, MapPin, Star, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Chip, IconButton } from '@/components/ui';
 import { useApply } from '@/hooks/useApply';
+import { useSeekerProfile } from '@/hooks/useSeekerProfile';
 import type { Job, Review } from '@/types';
 import { formatWage } from './jobPresentation';
 
@@ -134,6 +135,8 @@ export function BackFace({
           )}
         </section>
 
+        <WantedTraitsSection job={job} />
+
         <section className="space-y-1.5">
           <SectionTitle>가게 주소</SectionTitle>
           <p className="text-body text-[14px] leading-[1.5]">{job.address}</p>
@@ -163,6 +166,57 @@ export function BackFace({
 
       {showApply && <ApplicationFooter job={job} onBeforeApply={onBeforeApply} />}
     </div>
+  );
+}
+
+/**
+ * "이런 분을 찾아요" — 사장님이 고른 성격 키워드(job.wantedTraits).
+ *
+ * 내 프로필 성격과 겹치는 칩은 brand-soft 배경으로 강조한다. 이 화면에서
+ * "성격이 맞는 가게"가 눈에 보이는 유일한 지점이다.
+ *
+ * wantedTraits 는 optional 이다(마이그레이션 전 행 대비). 비어 있으면 섹션 자체를
+ * 그리지 않는다 — 빈 제목만 남으면 정보가 없는 게 아니라 고장난 것처럼 보인다.
+ */
+function WantedTraitsSection({ job }: { job: Job }) {
+  const { profile } = useSeekerProfile();
+  const wanted = job.wantedTraits ?? [];
+
+  if (wanted.length === 0) return null;
+
+  const mine = new Set<string>(profile?.personalityTraits ?? []);
+  const matchCount = wanted.filter((trait) => mine.has(trait)).length;
+
+  return (
+    <section className="space-y-2">
+      <div className="flex items-baseline gap-1.5">
+        <SectionTitle>이런 분을 찾아요</SectionTitle>
+        {matchCount > 0 && (
+          <span className="text-brand text-[12px] leading-[1.3] font-semibold">
+            <span className="tabular">{matchCount}</span>개 일치
+          </span>
+        )}
+      </div>
+      <ul className="flex flex-wrap gap-1.5">
+        {wanted.map((trait) => {
+          const matched = mine.has(trait);
+          return (
+            <li key={trait}>
+              <Chip
+                size="md"
+                /* Chip 기본 variant(bg-subtle/text-muted) 위에 덮어쓴다.
+                   같은 속성끼리는 클래스 순서가 아니라 CSS 생성 순서로 이기므로
+                   `!`로 못 박는다 — 토큰은 그대로 쓴다(hex 없음). */
+                className={matched ? 'bg-brand-soft! text-brand!' : undefined}
+              >
+                {matched ? <span className="sr-only">내 성격과 일치: </span> : null}
+                {trait}
+              </Chip>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

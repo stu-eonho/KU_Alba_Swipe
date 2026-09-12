@@ -4,22 +4,25 @@
  * ALBASWIPE_SPEC.md <home_deck_view><card_stack> + <swipe_gesture>
  *
  * 카드 한 장. 구조가 세 겹인 이유 (각 겹이 transform을 하나씩만 소유한다):
- *   [1] 바깥 — `layoutId`. motion의 layout projection이 transform을 통째로 소유한다
+ *   [1] 바깥 — 쌓임 순서(zIndex)만. 자체 transform을 갖지 않는다
  *   [2] 가운데 — 스택 위치(scale / translateY). 원점은 기본값(중앙)
  *   [3] 안쪽 — 드래그(x / rotate / opacity). 원점 50% 120%
  *
  * [2]와 [3]을 합치면 회전 원점이 scale에도 걸려 뒤 카드가 아래로 밀린다.
- * [1]과 [2]를 합치면 상세 카드가 닫힐 때(= 이 카드로 되돌아오는 layout 애니메이션)
- * projection이 scale/translateY를 덮어써 카드가 튄다.
+ *
+ * CRITICAL: [1]에 `layoutId`를 주지 않는다 (PHASE7 F3).
+ * 홈 상세는 확대 오버레이가 아니라 `/jobs/:jobId` 화면으로 이동하므로 짝이 될 요소가 없고,
+ * 찜 격자(GridCard)가 같은 `card-<id>` 문자열을 계속 쓴다. 두 화면이 한 프레임이라도
+ * 같이 마운트되면 motion이 주체를 정하지 못해 카드가 다른 카드를 뚫고 나온다
+ * (이 프로젝트에서 두 번 터진 버그다).
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { MapPin, Star } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Chip } from '@/components/ui';
 import type { Job, SwipeDirection } from '@/types';
-import { FLIP_TRANSITION, INSTANT_TRANSITION } from '@/features/wishlist/flipMotion';
-import { getCategoryVisual } from './categoryVisual';
+import { getCategoryVisual, jobImageUrl } from './categoryVisual';
 import { SwipeOverlay } from './SwipeOverlay';
 import {
   DEPTH_SCALE,
@@ -64,14 +67,8 @@ export type SwipeCardProps = {
   exitDirection?: SwipeDirection | null;
   /** 드래그로 스와이프가 확정됐을 때. CardStack의 commitSwipe로 합류한다 */
   onCommit?: (direction: SwipeDirection) => void;
-  /** 탭(8px 미만 · 500ms 미만)으로 판정됐을 때 — 상세 보기 */
+  /** 탭(8px 미만 · 500ms 미만)으로 판정됐을 때 — `/jobs/:jobId` 상세 화면으로 이동한다 */
   onTap?: () => void;
-  /**
-   * 상세 카드와 공유할 motion layoutId. 맨 위 카드에만 준다.
-   * CRITICAL: 같은 id를 가진 요소가 동시에 둘 살아 있으면 motion이 주체를 정하지 못한다.
-   *           상세가 열리는 동안 CardStack이 이 카드를 빈 자리로 교체한다.
-   */
-  layoutId?: string;
   zIndex?: number;
 };
 
@@ -81,7 +78,6 @@ export function SwipeCard({
   exitDirection = null,
   onCommit,
   onTap,
-  layoutId,
   zIndex,
 }: SwipeCardProps) {
   const isTop = depth === 0;
@@ -137,6 +133,13 @@ export function SwipeCard({
   const y = isExiting ? 0 : DEPTH_Y[slot];
 
   const visual = getCategoryVisual(job.category);
+  /*
+   * 업종 기본 사진은 외부(Unsplash)에서 온다. 데모 중 네트워크가 끊기면
+   * 깨진 이미지 아이콘이 카드 위에 그대로 남으므로, 실패하면 기존 그라디언트로 되돌린다.
+   * job.id 로 키를 걸지 않는 이유: 카드는 공고 하나당 하나씩 마운트되고
+   * 스와이프하면 언마운트되므로 상태가 다음 공고로 새지 않는다.
+   */
+  const [imageFailed, setImageFailed] = useState(false);
   const wage = `${job.hourlyWage.toLocaleString('ko-KR')}원`;
   const dragProps = isTop ? bind() : {};
 
@@ -147,14 +150,8 @@ export function SwipeCard({
   const hiddenBenefitCount = job.benefits.length - benefits.length;
 
   return (
-    /* [1] layoutId 전용 겹 — 자체 transform을 갖지 않는다.
-           상세 카드가 닫힐 때 motion이 이 요소를 확대 박스에서 제자리로 되돌린다. */
-    <motion.div
-      layoutId={layoutId}
-      transition={prefersReduced ? INSTANT_TRANSITION : FLIP_TRANSITION}
-      className="absolute inset-0"
-      style={{ zIndex }}
-    >
+    /* [1] 쌓임 순서 전용 겹 — 자체 transform도 layoutId도 갖지 않는다 */
+    <div className="absolute inset-0" style={{ zIndex }}>
       {/* [2] 스택 위치 */}
       <motion.div
         className="h-full w-full"
@@ -199,11 +196,12 @@ export function SwipeCard({
         >
           {/* 이미지 60% */}
           <div className="relative h-[60%] w-full overflow-hidden">
-            {job.imageUrl ? (
+            {!imageFailed ? (
               <img
-                src={job.imageUrl}
+                src={jobImageUrl(job)}
                 alt=""
                 draggable={false}
+                onError={() => setImageFailed(true)}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -300,6 +298,6 @@ export function SwipeCard({
           {depth <= 0 && <SwipeOverlay likeOpacity={likeOpacity} nopeOpacity={nopeOpacity} />}
         </motion.div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

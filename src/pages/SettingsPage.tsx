@@ -6,7 +6,9 @@ import { Tutorial } from '@/features/onboarding';
 import { resetTutorial } from '@/features/onboarding/tutorialStorage';
 import { ConfirmDialog } from '@/features/settings/ConfirmDialog';
 import { Toast, useToast } from '@/features/settings/Toast';
+import { ProfileAvatar } from '@/features/profile';
 import { useDeleteAccount } from '@/hooks/useDeleteAccount';
+import { useSeekerProfile } from '@/hooks/useSeekerProfile';
 import { useResetSwipes, useSwipeStats } from '@/hooks/useSwipeHistory';
 import { useAuth } from '@/lib/auth-context';
 
@@ -27,6 +29,8 @@ function messageOf(error: unknown, fallback: string): string {
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  // 업로드한 사진은 seeker_profiles.avatar_url 에 있다. user_metadata 에는 없다.
+  const { profile } = useSeekerProfile();
   const { stats } = useSwipeStats();
   const { reset, isResetting } = useResetSwipes();
   const { deleteAccount, isDeleting } = useDeleteAccount();
@@ -79,12 +83,11 @@ export default function SettingsPage() {
     <div className="tabbar-safe">
       <section className="m-4 rounded-tile bg-surface p-5">
         <div className="flex items-center gap-4">
-          <div
-            aria-hidden
-            className="flex size-14 shrink-0 items-center justify-center rounded-full bg-subtle text-[22px] font-semibold text-muted"
-          >
-            {user.nickname.charAt(0)}
-          </div>
+          {/*
+            * 예전에는 nickname.charAt(0) 을 직접 그려서 사진을 올려도 이니셜만 나왔다.
+            * ProfileAvatar 는 avatarUrl 이 있으면 이미지를, 없으면 이니셜을 그린다.
+            */}
+          <ProfileAvatar nickname={user.nickname} avatarUrl={profile?.avatarUrl} size={56} />
           <div className="min-w-0">
             <p className="clamp-1 text-[18px] font-semibold text-ink">{user.nickname}</p>
             <p className="clamp-1 text-[13px] text-faint">{user.email}</p>

@@ -23,6 +23,18 @@ export type BottomTabBarProps = {
   className?: string;
 };
 
+/**
+ * 인터랙티브 튜토리얼 스포트라이트 앵커(PHASE6 B-3 · PHASE7 F9).
+ * 값은 tutorialSteps.ts / employerSteps.ts 의 `anchor` 와 1:1로 맞춘다.
+ * 여기 없는 탭은 앵커가 없고, 그때 튜토리얼은 스포트라이트 없이 설명만 띄운다.
+ */
+const TOUR_ANCHORS: Record<string, string> = {
+  '/wishlist': 'tab-wishlist',
+  '/settings': 'tab-settings',
+  '/employer/held': 'tab-held',
+  '/employer/jobs': 'tab-jobs',
+};
+
 const SEEKER_TABS = [
   { to: '/', label: '홈', Icon: Home },
   { to: '/wishlist', label: '찜한 가게', Icon: Heart },
@@ -58,12 +70,8 @@ export function BottomTabBar({ role = 'seeker', wishlistCount, className }: Bott
     >
       <ul className="flex h-16 items-stretch">
         {tabs.map(({ to, label, Icon }) => (
-          /* data-tour="tab-wishlist" — 인터랙티브 튜토리얼 스포트라이트 앵커 (PHASE6 B-3) */
-          <li
-            key={to}
-            data-tour={to === '/wishlist' ? 'tab-wishlist' : undefined}
-            className="flex-1"
-          >
+          /* data-tour — 인터랙티브 튜토리얼 스포트라이트 앵커 (PHASE6 B-3 · PHASE7 F9) */
+          <li key={to} data-tour={TOUR_ANCHORS[to]} className="flex-1">
             <NavLink
               to={to}
               end={to === '/'}

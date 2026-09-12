@@ -19,4 +19,10 @@ export { useSwipeGesture } from './useSwipeGesture';
 export type { SwipeGesture, UseSwipeGestureOptions } from './useSwipeGesture';
 
 export { getCategoryVisual } from './categoryVisual';
+export { categoryImage, jobImageUrl } from './categoryVisual';
 export type { CategoryVisual } from './categoryVisual';
+
+export { RegionFilterSheet } from './RegionFilterSheet';
+export type { RegionFilterSheetProps } from './RegionFilterSheet';
+
+export { getRegions, setRegions, REGION_STORAGE_KEY } from './regionStorage';

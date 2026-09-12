@@ -7,20 +7,24 @@
  * 화면 컨테이너에 overflow-hidden을 주는 이유: 카드가 화면 밖으로 날아갈 때
  * 가로 스크롤이 생기거나 드래그 중 페이지가 같이 움직이는 것을 막는다.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { SearchX, WifiOff } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { EmptyState, Skeleton, useToast } from '@/components/ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { MapPinOff, SearchX, SlidersHorizontal, WifiOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { EmptyState, IconButton, Skeleton, useToast } from '@/components/ui';
 import { ErrorBoundary } from '@/components/layout';
-import { CardStack, SwipeControls } from '@/features/deck';
-import { ExpandedCard } from '@/features/wishlist';
+import {
+  CardStack,
+  RegionFilterSheet,
+  SwipeControls,
+  getRegions,
+  setRegions,
+} from '@/features/deck';
 import {
   TUTORIAL_ACTIVE_EVENT,
   emitTutorialSwipe,
   type TutorialActiveDetail,
 } from '@/features/onboarding';
 import { useDeck } from '@/hooks/useDeck';
-import { useReviews } from '@/hooks/useReviews';
 import type { Job, SwipeDirection } from '@/types';
 
 export default function HomeDeckPage() {
@@ -32,17 +36,49 @@ export default function HomeDeckPage() {
   const { jobs, isLoading, isError, retry, swipe, swipeError, hiddenCount, hasAvailability } =
     useDeck(includeIncompatible);
   const toast = useToast();
+  const navigate = useNavigate();
 
   /**
-   * 카드를 탭하면 열리는 상세 카드. 찜 화면과 **같은 ExpandedCard**를 쓴다.
-   * layoutId가 `card-${job.id}`로 같으므로 덱 카드 → 상세 카드 확대가 그대로 붙는다.
+   * 지역 필터. useDeck 은 건드리지 않고 화면단에서 거른다 —
+   * 공고가 60건 규모라 한 번 더 훑는 비용이 네트워크 왕복보다 싸고,
+   * useDeck 은 개발자 A 소유라 시그니처를 늘릴 수 없다.
+   *
+   * 초기값을 lazy initializer 로 읽는 이유: localStorage 접근은 렌더마다 할 일이 아니고,
+   * 시크릿 모드에서는 throw 할 수 있어서 regionStorage 안에서만 다루게 가둔다.
    */
-  const [expandedJob, setExpandedJob] = useState<Job | null>(null);
+  const [regions, setRegionState] = useState<string[]>(() => getRegions());
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const applyRegions = useCallback((next: string[]) => {
+    setRegionState(next);
+    setRegions(next);
+    setSheetOpen(false);
+  }, []);
+
+  // 빈 배열 = 전국 = 필터 없음. 이때는 원본 배열을 그대로 넘겨 참조를 유지한다.
+  const visibleJobs = useMemo(
+    () => (regions.length === 0 ? jobs : jobs.filter((job) => regions.includes(job.region))),
+    [jobs, regions],
+  );
+
+  /**
+   * "지역 때문에 0건"과 "덱을 다 봤다"를 구분한다.
+   * 구분하지 않으면 서울 외 지역을 골랐을 때 "오늘 볼 공고를 다 봤어요!"가 떠서
+   * 필터가 고장 난 것처럼 보인다 (지금 시드 데이터가 전부 서울이라 실제로 자주 생긴다).
+   */
+  const filteredToEmpty = visibleJobs.length === 0 && jobs.length > 0 && regions.length > 0;
+
+  /**
+   * 카드를 탭하면 확대 오버레이가 아니라 `/jobs/:jobId` 전체 화면으로 **이동**한다 (PHASE7 F3).
+   * 홈은 "한 장씩 넘기다 하나를 자세히 본다"라 창이 맞다.
+   * 찜 목록은 "여러 개를 비교하다 하나를 크게 본다"라 ExpandedCard 오버레이를 그대로 쓴다 — 건드리지 않았다.
+   */
+  const openJobDetail = useCallback((job: Job) => navigate(`/jobs/${job.id}`), [navigate]);
 
   /**
    * 튜토리얼이 떠 있는 동안에는 카드 탭(상세 열기)을 막는다.
-   * 인터랙티브 튜토리얼은 z-80, 상세 카드는 z-50이라 상세가 열리면 스크림 뒤에 깔려
-   * 무슨 일이 일어난 건지 알 수 없게 된다. 스와이프는 그대로 열어 둔다 — 그게 과제다.
+   * 튜토리얼 도중에 다른 화면으로 나가 버리면 스포트라이트가 가리키던 대상이 사라진다.
+   * 스와이프는 그대로 열어 둔다 — 그게 과제다.
    */
   const [tutorialActive, setTutorialActive] = useState(false);
   useEffect(() => {
@@ -80,10 +116,37 @@ export default function HomeDeckPage() {
       onToggle={() => setIncludeIncompatible((prev) => !prev)}
     />
   );
-  const hasNotice = Boolean(notice);
+  // 지역 안내 줄은 선택된 지역이 있을 때만. 전국이면 잡음이라 그리지 않는다.
+  const regionNotice = regions.length > 0 && (
+    <RegionNotice regions={regions} onClear={() => applyRegions([])} />
+  );
+  const hasNotice = Boolean(notice) || Boolean(regionNotice);
 
   return (
     <div className="flex flex-col overflow-hidden">
+      {/*
+        필터 버튼은 페이지 본문 최상단에 둔다. 탑바는 AppShell 이 그리고 router.tsx 가
+        소유하므로 건드리지 않는다. 우측 정렬 한 줄이라 시간 안내 줄과 높이를 나눠 쓴다.
+      */}
+      <div className="flex min-h-11 items-center justify-end px-2">
+        <IconButton
+          label="지역 필터"
+          onClick={() => setSheetOpen(true)}
+          aria-expanded={sheetOpen}
+          className="relative"
+        >
+          <SlidersHorizontal size={20} strokeWidth={1.75} aria-hidden />
+          {regions.length > 0 && (
+            <span
+              aria-hidden
+              className="bg-brand absolute top-1.5 right-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold text-white"
+            >
+              {regions.length}
+            </span>
+          )}
+        </IconButton>
+      </div>
+      {regionNotice}
       {notice}
       {isLoading ? (
         <DeckLoading />
@@ -97,7 +160,20 @@ export default function HomeDeckPage() {
             onAction={() => void retry()}
           />
         </div>
-      ) : jobs.length === 0 ? (
+      ) : filteredToEmpty ? (
+        // 덱 소진과 반드시 구분한다 — 여기서 "다 봤어요"가 뜨면 사용자는 필터가
+        // 고장 났다고 읽는다. 빠져나갈 문(지역 바꾸기)을 같이 준다.
+        <div className="flex flex-col items-center px-4 pt-16">
+          <EmptyState
+            icon={<MapPinOff size={56} className="text-faint" />}
+            title="선택한 지역에 공고가 없어요"
+            description={`${formatRegions(regions)} 대신 다른 지역을 골라 보세요`}
+            actionLabel="지역 바꾸기"
+            actionVariant="secondary"
+            onAction={() => setSheetOpen(true)}
+          />
+        </div>
+      ) : visibleJobs.length === 0 ? (
         <div className="flex flex-col items-center px-4 pt-16">
           <EmptyState
             icon={<SearchX size={56} className="text-faint" />}
@@ -112,28 +188,51 @@ export default function HomeDeckPage() {
         // 덱만 폴백으로 바꾸고 탭바는 살려 둔다 (탭바는 라우터 MainLayout 소유).
         <ErrorBoundary inline>
           <CardStack
-            jobs={jobs}
+            jobs={visibleJobs}
             onSwipe={handleSwipe}
-            onCardTap={tutorialActive ? undefined : setExpandedJob}
-            expandedJobId={expandedJob?.id ?? null}
+            onCardTap={tutorialActive ? undefined : openJobDetail}
             // 안내 줄이 있으면 카드 스택의 mt-4(16px)를 8px로 당긴다
             className={hasNotice ? '-mt-2' : undefined}
           />
         </ErrorBoundary>
       )}
 
-      <ExpandedCardWithReviews job={expandedJob} onClose={() => setExpandedJob(null)} />
+      <RegionFilterSheet
+        open={sheetOpen}
+        value={regions}
+        onApply={applyRegions}
+        onClose={() => setSheetOpen(false)}
+      />
     </div>
   );
 }
 
+/** "서울", "서울 · 경기", 3개 이상이면 "서울 외 2곳" */
+function formatRegions(regions: string[]) {
+  if (regions.length <= 2) return regions.join(' · ');
+  return `${regions[0]} 외 ${regions.length - 1}곳`;
+}
+
 /**
- * 리뷰는 카드가 열릴 때만 가져온다. useReviews는 jobId가 비면 요청하지 않으므로
- * 닫힌 상태에서는 네트워크 호출이 없다. (WishlistPage와 같은 패턴)
+ * 지역 안내 줄. 시간 안내 줄(AvailabilityNotice)과 같은 치수·톤을 쓴다 —
+ * 두 줄이 같이 뜰 수 있어서 서로 다른 모양이면 화면이 어수선해진다.
+ * 우측 "전체 지역"이 필터 해제다.
  */
-function ExpandedCardWithReviews({ job, onClose }: { job: Job | null; onClose: () => void }) {
-  const { reviews } = useReviews(job?.id ?? '');
-  return <ExpandedCard job={job} onClose={onClose} reviews={reviews} />;
+function RegionNotice({ regions, onClear }: { regions: string[]; onClear: () => void }) {
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-3 px-4">
+      <p className="text-faint min-w-0 truncate text-[12px] leading-[1.35]">
+        {formatRegions(regions)} 공고만 보고 있어요
+      </p>
+      <button
+        type="button"
+        onClick={onClear}
+        className="text-muted shrink-0 inline-flex h-11 items-center px-1 text-[12px] leading-[1.35] font-medium underline underline-offset-2 transition-transform duration-100 ease-out active:scale-[0.97]"
+      >
+        전체 지역
+      </button>
+    </div>
+  );
 }
 
 /**

@@ -3,11 +3,15 @@
  *
  * PHASE6_PLAN.md B-3 · 인터랙티브 튜토리얼의 단계 정의와 스와이프 신호.
  *
- * 앵커는 `data-tour="..."` 속성 값이다. 대상은 세 곳뿐이다:
+ * 여기 있는 INTERACTIVE_STEPS 는 **구직자용**이다. 구인자용은 employerSteps.ts 에 있고,
+ * 어느 배열을 쓸지는 Tutorial.tsx 가 role 로 고른다. 엔진은 한 벌만 쓴다.
+ *
+ * 앵커는 `data-tour="..."` 속성 값이다. 구직자 쪽 대상은 네 곳이다:
  *   deck          — CardStack 의 카드 스택 영역 **전체**(카드 개별이 아니다).
  *                   카드는 스와이프할 때마다 교체되므로 개별 카드를 잡으면 앵커가 흔들린다.
  *   controls      — SwipeControls 의 버튼 행
  *   tab-wishlist  — BottomTabBar 의 찜 탭
+ *   tab-settings  — BottomTabBar 의 설정 탭 (PHASE7 F9, 가능한 시간 안내)
  *
  * 앵커를 못 찾거나 크기가 0이면 스포트라이트 없이 설명 카드만 띄운다(useAnchorRect).
  */
@@ -110,6 +114,15 @@ export const INTERACTIVE_STEPS: readonly TutorialStep[] = [
     anchor: 'tab-wishlist',
     title: '찜한 공고는 여기서',
     body: '찜한 공고는 이 탭에서\n4개씩 나란히 놓고 비교해요.',
+    padding: 4,
+    radius: 12,
+  },
+  {
+    /* PHASE7 F9 — 가능한 시간 등록 안내. 이걸 모르면 추천이 왜 좁아지는지 알 수 없다. */
+    id: 'availability',
+    anchor: 'tab-settings',
+    title: '가능한 시간을 등록하세요',
+    body: '설정에서 요일과 시간을 정해두면\n겹치는 공고만 골라서 보여드려요.',
     padding: 4,
     radius: 12,
   },

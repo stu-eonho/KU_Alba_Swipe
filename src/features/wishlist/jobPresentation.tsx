@@ -5,8 +5,10 @@
  * (`src/components/`는 ui-foundation 소유라 여기 둔다. 공용으로 승격이 필요하면
  *  ui-foundation에게 요청할 것.)
  */
+import { useState } from 'react';
 import clsx from 'clsx';
 import { ImageIcon } from 'lucide-react';
+import { jobImageUrl } from '@/features/deck';
 import type { Job } from '@/types';
 
 /** 시급 표기 — 스펙 전역에서 "12,000원". tabular-nums는 호출부에서 `.tabular`로 준다. */
@@ -53,15 +55,22 @@ export type JobThumbProps = {
   className?: string;
 };
 
-/** 공고 썸네일. 이미지가 없으면 카테고리 그라디언트 + 플레이스홀더 아이콘. */
+/**
+ * 공고 썸네일. 사진이 없으면 업종 기본 사진(`jobImageUrl`)을 쓰고,
+ * 그마저 로드에 실패해야 카테고리 그라디언트 + 플레이스홀더 아이콘으로 내려간다.
+ * 덱 카드와 같은 판단을 쓰므로 두 화면의 그림이 어긋나지 않는다.
+ */
 export function JobThumb({ job, iconSize = 24, className }: JobThumbProps) {
-  if (job.imageUrl) {
+  const [failed, setFailed] = useState(false);
+
+  if (!failed) {
     return (
       <img
-        src={job.imageUrl}
+        src={jobImageUrl(job)}
         alt={`${job.storeName} 사진`}
         loading="lazy"
         decoding="async"
+        onError={() => setFailed(true)}
         className={clsx('h-full w-full object-cover', className)}
       />
     );

@@ -24,7 +24,8 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { X } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui';
-import { TUTORIAL_SLIDES } from './tutorialSlides';
+import type { UserRole } from '@/types';
+import { TUTORIAL_SLIDES, type TutorialSlide } from './tutorialSlides';
 import { hasSeenTutorial, markTutorialSeen } from './tutorialStorage';
 
 /* DESIGN_Swipe.md Motion & Easing — globals.css 의 --ease-standard / --ease-exit 와 같은 값 */
@@ -49,12 +50,27 @@ export type SlideTutorialProps = {
   open?: boolean;
   /** 건너뛰기 · 시작하기 · Escape 로 닫힐 때 호출된다. 닫기 전에 항상 "봤음"을 기록한다. */
   onClose?: () => void;
+  /**
+   * PHASE7 F9 — 역할별 슬라이드. 생략하면 구직자용 4장.
+   * 구인자에게 "오른쪽으로 넘기면 찜"이 뜨면 없느니만 못하다.
+   */
+  slides?: readonly TutorialSlide[];
+  /** "봤음"을 어느 역할 키에 기록할지. 생략하면 구직자. */
+  role?: UserRole;
 };
 
-export function SlideTutorial({ userId, open, onClose }: SlideTutorialProps) {
+export function SlideTutorial({
+  userId,
+  open,
+  onClose,
+  slides: slidesProp,
+  role = 'seeker',
+}: SlideTutorialProps) {
   const isControlled = open !== undefined;
+  /* 빈 배열이 오면 slide 가 undefined 가 되어 렌더가 던진다. 구직자용으로 되돌린다. */
+  const slides = slidesProp && slidesProp.length > 0 ? slidesProp : TUTORIAL_SLIDES;
   // 최초 렌더에서 한 번만 읽는다. 렌더마다 localStorage 를 때리지 않는다.
-  const [selfOpen, setSelfOpen] = useState(() => !hasSeenTutorial(userId));
+  const [selfOpen, setSelfOpen] = useState(() => !hasSeenTutorial(userId, role));
   const visible = isControlled ? open : selfOpen;
 
   const [index, setIndex] = useState(0);
@@ -63,15 +79,21 @@ export function SlideTutorial({ userId, open, onClose }: SlideTutorialProps) {
   const titleId = useId();
   const bodyId = useId();
 
-  const slide = TUTORIAL_SLIDES[index];
-  const isLast = index === TUTORIAL_SLIDES.length - 1;
+  const slide = slides[index] ?? slides[0];
+  const isLast = index === slides.length - 1;
 
   const close = useCallback(() => {
-    markTutorialSeen(userId);
+    markTutorialSeen(userId, role);
     setIndex(0);
     if (!isControlled) setSelfOpen(false);
     onClose?.();
-  }, [isControlled, onClose, userId]);
+  }, [isControlled, onClose, role, userId]);
+
+  /* keydown 이펙트는 visible 에만 반응한다. 길이가 바뀌어도 재등록하지 않도록 ref 로 읽는다. */
+  const slidesRef = useRef(slides);
+  useEffect(() => {
+    slidesRef.current = slides;
+  }, [slides]);
 
   // 인라인 화살표 함수를 넘겨도 keydown 이펙트가 재실행되지 않도록 ref 에 담는다
   const closeRef = useRef(close);
@@ -80,8 +102,8 @@ export function SlideTutorial({ userId, open, onClose }: SlideTutorialProps) {
   }, [close]);
 
   const goNext = useCallback(() => {
-    setIndex((i) => Math.min(i + 1, TUTORIAL_SLIDES.length - 1));
-  }, []);
+    setIndex((i) => Math.min(i + 1, slides.length - 1));
+  }, [slides.length]);
   const goPrev = useCallback(() => {
     setIndex((i) => Math.max(i - 1, 0));
   }, []);
@@ -105,7 +127,7 @@ export function SlideTutorial({ userId, open, onClose }: SlideTutorialProps) {
       }
       if (e.key === 'ArrowRight') {
         e.preventDefault();
-        setIndex((i) => Math.min(i + 1, TUTORIAL_SLIDES.length - 1));
+        setIndex((i) => Math.min(i + 1, slidesRef.current.length - 1));
         return;
       }
       if (e.key === 'ArrowLeft') {
@@ -215,7 +237,7 @@ export function SlideTutorial({ userId, open, onClose }: SlideTutorialProps) {
         <footer className="flex flex-col items-center gap-5">
           {/* 점 인디케이터 — 장식이므로 보조기술에는 아래 live 영역으로 전달한다 */}
           <div className="flex items-center gap-1.5" aria-hidden>
-            {TUTORIAL_SLIDES.map((s, i) => (
+            {slides.map((s, i) => (
               <span
                 key={s.id}
                 className={
@@ -228,7 +250,7 @@ export function SlideTutorial({ userId, open, onClose }: SlideTutorialProps) {
           </div>
           {/* 장이 바뀌어도 스크린리더는 h2 교체를 읽어주지 않는다. 여기서 알린다. */}
           <p className="sr-only" aria-live="polite">
-            {TUTORIAL_SLIDES.length}장 중 {index + 1}장. {slide.title}
+            {slides.length}장 중 {index + 1}장. {slide.title}
           </p>
 
           <Button data-tutorial-primary size="lg" fullWidth onClick={isLast ? close : goNext}>
