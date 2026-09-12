@@ -15,9 +15,9 @@ import type { User } from '@supabase/supabase-js';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { toAuthFailure } from './auth-errors';
-import type { AppUser } from '@/types';
+import type { AppUser, UserRole } from '@/types';
 
-type SignUpArgs = { email: string; password: string; nickname: string };
+type SignUpArgs = { email: string; password: string; nickname: string; role: UserRole };
 type SignInArgs = { email: string; password: string };
 
 type AuthValue = {
@@ -40,7 +40,12 @@ function toAppUser(user: User | null | undefined): AppUser | null {
       : // 닉네임 없이 만들어진 계정(테스트 계정 등)이 빈 이름으로 보이지 않게 합니다.
         (email.split('@')[0] ?? '회원');
 
-  return { id: user.id, email, nickname };
+  // Phase 1 에 만들어진 계정에는 role 이 없습니다. 그 계정이 로그인했을 때
+  // 화면이 비는 것보다 구직자로 보이는 편이 낫습니다.
+  const metadataRole = user.user_metadata?.role;
+  const role: UserRole = metadataRole === 'employer' ? 'employer' : 'seeker';
+
+  return { id: user.id, email, nickname, role };
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -82,12 +87,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isLoading,
 
-      async signUp({ email, password, nickname }) {
+      async signUp({ email, password, nickname, role }) {
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          // 닉네임은 auth.users.user_metadata 에 넣습니다. 별도 profiles 테이블을 만들지 않습니다.
-          options: { data: { nickname: nickname.trim() } },
+          // 닉네임과 역할은 auth.users.user_metadata 에 넣습니다.
+          // 별도 profiles 테이블을 만들지 않고, role 은 JWT 에 실려 RLS 에서 바로 쓸 수 있습니다.
+          options: { data: { nickname: nickname.trim(), role } },
         });
         if (error) throw toAuthFailure(error);
         // Confirm email 이 꺼져 있으면 여기서 이미 세션이 생기고

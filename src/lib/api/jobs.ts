@@ -23,6 +23,7 @@ export type JobRow = {
   rating: number | string | null;
   review_count: number | null;
   image_url: string | null;
+  employer_id?: string | null;
 };
 
 type ReviewRow = {
@@ -51,6 +52,7 @@ export function toJob(row: JobRow): Job {
     rating: Number(row.rating ?? 0),
     reviewCount: row.review_count ?? 0,
     imageUrl: row.image_url,
+    employerId: row.employer_id ?? null,
   };
 }
 
