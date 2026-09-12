@@ -1,4 +1,4 @@
-import { Bell, BriefcaseBusiness, CheckCircle2, Eye, XCircle } from 'lucide-react';
+import { Bell, BriefcaseBusiness, CheckCircle2, Eye, Heart, Sparkles, XCircle } from 'lucide-react';
 import type { NotificationItem, NotificationType } from '@/types';
 
 const TYPE_ICON: Record<NotificationType, typeof Bell> = {
@@ -6,6 +6,10 @@ const TYPE_ICON: Record<NotificationType, typeof Bell> = {
   application_viewed: Eye,
   application_accepted: CheckCircle2,
   application_rejected: XCircle,
+  // Phase 4 신규 타입. A 가 계약을 넓히면서 build 가 깨지지 않도록 자리만 채웠습니다.
+  // 아이콘·색 최종 결정은 B-4 입니다.
+  employer_interested: Heart,
+  mutual_match: Sparkles,
   system: Bell,
 };
 
