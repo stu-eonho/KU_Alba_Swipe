@@ -22,9 +22,15 @@ npm run dev
 
 ## 누가 무엇을 개발하는가
 
+| 역할 | 담당 | 맡는 것 |
+|---|---|---|
+| 🅰️ 개발자 A | **@welldonebrother34543** | 데이터 · 인증 · 설정 |
+| 🅱️ 개발자 B | **@stu-eonho** | 화면 · 인터랙션 · 디자인 시스템 |
+| 🅲 담당 C | **@molluIdontknow** | 기획 · 디자인 · 발표 (코드 미작성) |
+
 세 명이 서로의 파일을 건드리지 않도록 나눴습니다. **내 소유가 아닌 파일은 수정하지 않습니다.** 고쳐져야 하면 직접 고치지 말고 소유자에게 요청하세요. 전체 맵은 [`.github/CODEOWNERS`](./.github/CODEOWNERS)에 있습니다.
 
-### 🅰️ 개발자 A — 데이터 · 인증 · 설정
+### 🅰️ 개발자 A — 데이터 · 인증 · 설정 · `@welldonebrother34543`
 
 <table>
 <tr><td><b>소유 폴더</b></td><td>
@@ -35,9 +41,13 @@ npm run dev
 </td></tr>
 <tr><td><b>만들 것</b></td><td>
 
-1. Supabase 프로젝트 생성 → **Confirm email 끄기** → `.env.local` 팀 공유 · *(20분)*
-2. `supabase/schema.sql` 실행 → `seed.sql` 실행
-3. `src/types.ts` 확정 후 **즉시 푸시** — B가 이걸 기다립니다 · *(30분 안)*
+> ✅ **Supabase 셋업은 이미 끝나 있습니다.** 프로젝트 생성 · Confirm email 끄기 · `schema.sql` · `seed.sql` 실행까지 B가 미리 해뒀습니다. 공고 3개와 리뷰 7개가 들어 있고 RLS도 확인했습니다. **`.env.local` 값만 팀 채널에서 받아 넣고 3번부터 시작하세요.** (약 40분 절약)
+>
+> 대시보드를 봐야 할 때(Table Editor로 `swipes` 확인 등)는 B에게 Supabase 조직 초대를 요청하세요.
+
+1. ~~Supabase 프로젝트 생성 → Confirm email 끄기 → `.env.local` 팀 공유~~ ✅ 완료
+2. ~~`supabase/schema.sql` 실행 → `seed.sql` 실행~~ ✅ 완료
+3. `src/types.ts` 확정 후 **즉시 푸시** — B가 이걸 기다립니다 · **여기서 시작** *(30분 안)*
 4. `lib/supabase.ts` · `lib/auth-context.tsx` · 로그인/회원가입 화면 → **실제로 로그인 되는 것까지**
 5. `hooks/useDeck.ts` → `useWishlist.ts` → `useReviews.ts`
 6. 설정 화면 — **"스와이프 기록 초기화"를 가장 먼저** 만드세요
@@ -50,7 +60,7 @@ npm run dev
 </td></tr>
 </table>
 
-### 🅱️ 개발자 B — 화면 · 인터랙션 · 디자인 시스템
+### 🅱️ 개발자 B — 화면 · 인터랙션 · 디자인 시스템 · `@stu-eonho`
 
 <table>
 <tr><td><b>소유 폴더</b></td><td>
@@ -82,7 +92,7 @@ npm run dev
 > const jobs = MOCK_JOBS;      // →   const { jobs } = useDeck();
 > ```
 
-### 🅲 담당 C — 기획 · 디자인 · 발표
+### 🅲 담당 C — 기획 · 디자인 · 발표 · `@molluIdontknow`
 
 코드를 쓰지 않습니다. 개발자 둘의 시간을 콘텐츠 작업에서 빼주는 것이 이 역할의 목적입니다.
 
@@ -112,7 +122,7 @@ npm run dev
 
 | 시각 | 체크포인트 | A | B |
 |---|---|---|---|
-| 0:00–0:45 | **CP1** 둘 다 `npm run dev` 성공 | Supabase 생성 · Confirm email 끄기 · `types.ts` 푸시 | 토큰 + 버튼/인풋 |
+| 0:00–0:45 | **CP1** 둘 다 `npm run dev` 성공 | `.env.local` 넣기 · **`types.ts` 푸시** (Supabase 셋업 ✅ 완료됨) | 토큰 + 버튼/인풋 |
 | 0:45–2:30 | **CP2** 로그인 실제 동작 / 카드 날아감 | 스키마·시드 · 로그인 · `useDeck` | 탭바·라우터 · **스와이프 덱** |
 | 2:30–4:00 | **CP3 최초 통합** ⚠️ | `useWishlist` · 기록 초기화 · **Vercel 배포 1회** | 찜 2×2 격자 앞면 |
 | 4:00–5:30 | **CP4** 뒤집기 동작 | `useReviews` | 카드 확대+뒤집기 · 뒷면 · 지원 화면 |
