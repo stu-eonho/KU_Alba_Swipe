@@ -12,9 +12,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { JOB_CATEGORIES } from '@/lib/api/jobs';
 import { toHHMM } from '@/lib/availability';
-import { useCreateJob } from '@/hooks/useCreateJob';
+import { useCreateJob } from '@/hooks/useEmployerJobs';
 import { Field, FormBanner, SubmitButton, TextareaField } from '@/features/auth/form-primitives';
-import { WEEKDAYS, type Weekday } from '@/types';
+import { PERSONALITY_TRAITS, WEEKDAYS, type PersonalityTrait, type Weekday } from '@/types';
 
 const TIME_OPTIONS = Array.from({ length: 49 }, (_, index) => index * 30);
 const BENEFIT_OPTIONS = [
@@ -53,6 +53,7 @@ export default function EmployerJobFormPage() {
   const [startMin, setStartMin] = useState(9 * 60);
   const [endMin, setEndMin] = useState(18 * 60);
   const [benefits, setBenefits] = useState<string[]>([]);
+  const [wantedTraits, setWantedTraits] = useState<PersonalityTrait[]>([]);
 
   const [errors, setErrors] = useState<Errors>({});
   const [banner, setBanner] = useState<string | null>(null);
@@ -99,12 +100,18 @@ export default function EmployerJobFormPage() {
         workDays: [...days].sort((a, b) => WEEKDAYS.indexOf(a) - WEEKDAYS.indexOf(b)).join('·'),
         workHours: `${formatClock(startMin)} ~ ${formatClock(endMin)}`,
         benefits,
+        wantedTraits,
         imageUrl: null,
       });
-      navigate('/', { replace: true });
-    } catch {
-      // 원문 대신 한 문장으로. 실패해도 입력값은 그대로 두어 다시 제출할 수 있게 합니다.
-      setBanner('공고를 올리지 못했어요. 잠시 후 다시 시도해 주세요');
+      navigate('/employer/jobs', { replace: true });
+    } catch (error) {
+      // 형식 검증 실패는 고칠 수 있는 문제라 그대로 보여줍니다.
+      // 그 밖의 실패는 원문 대신 한 문장으로. 어느 쪽이든 입력값은 그대로 둡니다.
+      const message =
+        error instanceof Error && error.message.includes('형식')
+          ? error.message
+          : '공고를 올리지 못했어요. 잠시 후 다시 시도해 주세요';
+      setBanner(message);
     }
   }
 
@@ -260,6 +267,44 @@ export default function EmployerJobFormPage() {
                   }`}
                 >
                   {item}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-1 text-[13px] font-semibold text-muted">이런 분을 찾아요</p>
+          <p className="mb-2 text-[12px] text-faint">
+            구직자 프로필의 성격 키워드와 같은 목록입니다. 최대 5개.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {PERSONALITY_TRAITS.map((trait) => {
+              const selected = wantedTraits.includes(trait);
+              const full = wantedTraits.length >= 5;
+              return (
+                <button
+                  key={trait}
+                  type="button"
+                  onClick={() =>
+                    setWantedTraits((prev) =>
+                      prev.includes(trait)
+                        ? prev.filter((item) => item !== trait)
+                        : // 5개를 넘기면 DB CHECK 에 걸립니다. 화면에서 먼저 막습니다.
+                          prev.length >= 5
+                          ? prev
+                          : [...prev, trait],
+                    )
+                  }
+                  disabled={isCreating || (!selected && full)}
+                  aria-pressed={selected}
+                  className={`h-9 rounded-full border px-3 text-[13px] font-medium disabled:opacity-40 ${
+                    selected
+                      ? 'border-brand bg-brand-soft text-brand'
+                      : 'border-line bg-surface text-muted'
+                  }`}
+                >
+                  {trait}
                 </button>
               );
             })}
