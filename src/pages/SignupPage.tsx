@@ -35,8 +35,7 @@ import {
   validatePasswordConfirm,
 } from '@/features/auth/validation';
 import type { UserRole } from '@/types';
-
-const MAX_INTRO_LENGTH = 500;
+import { MAX_INTRO_LENGTH } from '@/lib/profile-limits';
 
 type FieldErrors = {
   nickname?: string;
