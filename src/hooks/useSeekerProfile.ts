@@ -2,7 +2,7 @@
  * OWNER: 개발자 A (데이터/인증)
  *
  *   const { profile, isLoading, save, isSaving } = useSeekerProfile();        // 본인
- *   const { profile, isLoading } = useSeekerProfile(applicant.seeker.id);     // 사업자가 지원자를 볼 때
+ *   const { profile, isLoading } = useSeekerProfile(applicant.seeker.id);     // 구인자가 지원자를 볼 때
  *
  * 남의 프로필을 볼 때 save() 를 부르지 마세요. RLS 가 막지만 화면에서 버튼을 안 보이게 하는 게 먼저입니다.
  * avatarUrl 과 resumeUrl 은 항상 null 입니다 — 파일 업로드는 범위 밖이고, 필드만 남겨 뒀습니다.

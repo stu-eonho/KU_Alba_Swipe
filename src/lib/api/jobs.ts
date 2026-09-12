@@ -159,7 +159,7 @@ export function assertWorkFormat(workDays: string, workHours: string): void {
 }
 
 /**
- * 공고 등록 (사업자).
+ * 공고 등록 (구인자).
  *
  * employer_id 를 보내지 않습니다 — 컬럼 default 가 auth.uid() 이고,
  * RLS 의 with check (auth.uid() = employer_id) 가 남의 이름으로 올리는 것을 막습니다.
@@ -189,7 +189,7 @@ export async function createJob(input: NewJob): Promise<Job> {
   return toJob(data as JobRow);
 }
 
-/** 내가 올린 공고 (사업자). 최신순. */
+/** 내가 올린 공고 (구인자). 최신순. */
 export async function fetchMyJobs(employerId: string): Promise<Job[]> {
   const { data, error } = await supabase
     .from('jobs')

@@ -5,7 +5,7 @@
  *
  * 읽기 범위는 RLS 가 정합니다:
  *   - 본인은 자기 프로필
- *   - 사업자는 자기 공고에 지원한 사람의 프로필만
+ *   - 구인자는 자기 공고에 지원한 사람의 프로필만
  * 그래서 여기서 권한을 다시 검사하지 않습니다.
  */
 import { supabase } from '@/lib/supabase';
@@ -56,7 +56,7 @@ export async function fetchSeekerProfile(userId: string): Promise<SeekerProfile 
   return data ? toSeekerProfile(data as SeekerProfileRow) : null;
 }
 
-/** 여러 명의 프로필을 한 번에. 사업자 지원자 목록에서 씁니다. */
+/** 여러 명의 프로필을 한 번에. 구인자 지원자 목록에서 씁니다. */
 export async function fetchSeekerProfiles(userIds: string[]): Promise<SeekerProfile[]> {
   // 빈 배열로 .in() 을 부르면 PostgREST 가 빈 결과를 주긴 하지만, 쓸데없는 왕복입니다.
   if (userIds.length === 0) return [];

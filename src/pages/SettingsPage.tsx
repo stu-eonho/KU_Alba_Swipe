@@ -58,7 +58,7 @@ export default function SettingsPage() {
           <div className="min-w-0">
             <p className="clamp-1 text-[18px] font-semibold text-ink">{user.nickname}</p>
             <p className="clamp-1 text-[13px] text-faint">{user.email}</p>
-            <p className="mt-1 text-[12px] text-muted">{isSeeker ? '구직자' : '사업자'}</p>
+            <p className="mt-1 text-[12px] text-muted">{isSeeker ? '구직자' : '구인자'}</p>
           </div>
         </div>
 

@@ -6,7 +6,7 @@
  *
  *   1. 이메일·비밀번호·닉네임 + 역할 선택
  *   2. 개인정보 활용 동의 (필수 1 + 선택 1)
- *   3. 자기소개서 — 구직자만. 사업자는 2단계에서 끝납니다
+ *   3. 자기소개서 — 구직자만. 구인자는 2단계에서 끝납니다
  *
  * Confirm email 이 꺼져 있어야 가입 즉시 세션이 생깁니다.
  * 켜져 있으면 가입은 되는데 로그인이 막혀 데모가 불가능합니다.
@@ -67,7 +67,7 @@ export default function SignupPage() {
   const [banner, setBanner] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  // 사업자는 자기소개서 단계가 없습니다.
+  // 구인자는 자기소개서 단계가 없습니다.
   const totalSteps = role === 'employer' ? 2 : 3;
 
   if (isLoading) return <AuthLoading />;
@@ -100,7 +100,7 @@ export default function SignupPage() {
 
       if (role === 'seeker') {
         // 닉네임을 프로필에도 복사합니다. auth 스키마는 API 로 노출되지 않아서,
-        // 이게 없으면 사업자가 지원자 이름을 읽을 방법이 없습니다.
+        // 이게 없으면 구인자가 지원자 이름을 읽을 방법이 없습니다.
         const { data } = await supabase.auth.getUser();
         const userId = data.user?.id;
         if (userId) {
@@ -253,7 +253,7 @@ export default function SignupPage() {
                 checked={agreeRequired}
                 onChange={setAgreeRequired}
                 label="개인정보 수집 및 이용 동의"
-                description="닉네임·이메일과 프로필에 적은 내용을 지원한 공고의 사업자에게 보여주는 데 사용합니다."
+                description="닉네임·이메일과 프로필에 적은 내용을 지원한 공고의 구인자에게 보여주는 데 사용합니다."
               />
               <div className="h-px bg-line-soft" />
               <Checkbox
@@ -286,7 +286,7 @@ export default function SignupPage() {
             <div>
               <h2 className="text-[18px] font-bold text-ink">자기소개서</h2>
               <p className="mt-1 text-[13px] text-muted">
-                지원할 때 사업자에게 함께 전달됩니다. 나중에 내 정보에서 고칠 수 있어요.
+                지원할 때 구인자에게 함께 전달됩니다. 나중에 내 정보에서 고칠 수 있어요.
               </p>
             </div>
 
