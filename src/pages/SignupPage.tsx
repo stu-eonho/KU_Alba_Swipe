@@ -50,8 +50,7 @@ export default function SignupPage() {
       nickname: validateNickname(nickname),
       email: validateEmail(email),
       password: validatePassword(password),
-      passwordConfirm:
-        password !== passwordConfirm ? '비밀번호가 일치하지 않습니다' : undefined,
+      passwordConfirm: password !== passwordConfirm ? '비밀번호가 일치하지 않습니다' : undefined,
     };
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;

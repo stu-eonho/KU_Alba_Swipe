@@ -19,7 +19,8 @@ export function validateEmail(value: string): string | undefined {
 
 export function validatePassword(value: string): string | undefined {
   if (!value) return '비밀번호를 입력해 주세요';
-  if (value.length < MIN_PASSWORD_LENGTH) return `비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다`;
+  if (value.length < MIN_PASSWORD_LENGTH)
+    return `비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다`;
   return undefined;
 }
 
