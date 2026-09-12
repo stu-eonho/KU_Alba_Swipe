@@ -6,29 +6,28 @@
  *  - 로딩: 격자 스켈레톤 4개(2x2) / 에러: WifiOff + 다시 시도 / 비었음: Heart + 공고 보러 가기
  *  - 찜 해제는 낙관적 제거 + 토스트 "찜을 해제했어요"(되돌리기)
  *
- * 경계: 셀을 탭했을 때의 확대·뒤집기는 deck-interaction 소유다.
- *       이 페이지는 `expandedJob` 상태와 onCardClick만 들고 있고, 오버레이는 그리지 않는다.
+ * 셀을 탭하면 홈 카드와 같은 `/jobs/:id` 전체 화면 상세로 이동한다.
+ * 목록마다 다른 상세 UI를 두면 같은 공고가 서로 다른 기능처럼 느껴져 한 경로로 통일한다.
  *
  * AppShell을 직접 쓰지 않는다 — 라우터의 MainLayout이 이미 감싸고 있다.
  */
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTopBarTitle } from '@/components/layout';
 import { useToast } from '@/components/ui';
 import {
-  ExpandedCard,
   LoadErrorState,
   WishlistEmpty,
   WishlistGrid,
   WishlistGridSkeleton,
 } from '@/features/wishlist';
 import { useWishlist } from '@/hooks/useWishlist';
-import { useReviews } from '@/hooks/useReviews';
 import { useDeck } from '@/hooks/useDeck';
 import type { Job } from '@/types';
 
 export default function WishlistPage() {
   const { entries, isLoading, isError, retry, remove } = useWishlist();
   const toast = useToast();
+  const navigate = useNavigate();
 
   /**
    * 찜 해제 되돌리기용. useWishlist.remove()는 direction을 'left'로 내리기만 하고
@@ -37,12 +36,6 @@ export default function WishlistPage() {
    * 올바르다 — 되살린 공고가 덱에 다시 나오면 안 된다).
    */
   const { swipe } = useDeck();
-
-  /**
-   * 확대된 카드로 띄울 공고. 오버레이는 <ExpandedCard>가 렌더한다 (deck-interaction 소유).
-   * 격자 셀의 layoutId는 `card-${job.id}` — GridCard의 gridCardLayoutId()가 단일 소스다.
-   */
-  const [expandedJob, setExpandedJob] = useState<Job | null>(null);
 
   // 로딩 중에는 개수를 붙이지 않는다 — "찜한 공고 0"이 번쩍이면 비어 있는 것처럼 보인다
   useTopBarTitle(isLoading || isError ? '찜한 공고' : `찜한 공고 ${entries.length}`);
@@ -61,7 +54,6 @@ export default function WishlistPage() {
 
   const handleUnwishlist = (job: Job) => {
     remove(job.id);
-    if (expandedJob?.id === job.id) setExpandedJob(null);
     toast.success('찜을 해제했어요', {
       actionLabel: '되돌리기',
       onAction: () => swipe(job.id, 'right'),
@@ -69,25 +61,10 @@ export default function WishlistPage() {
   };
 
   return (
-    <>
-      {/* 확대 중인 셀은 숨긴다 — 확대 카드와 원본이 동시에 보이면 전환이 겹쳐 보인다 */}
-      <WishlistGrid
-        entries={entries}
-        onCardClick={setExpandedJob}
-        onUnwishlist={handleUnwishlist}
-        expandedJobId={expandedJob?.id ?? null}
-      />
-
-      <ExpandedCardWithReviews job={expandedJob} onClose={() => setExpandedJob(null)} />
-    </>
+    <WishlistGrid
+      entries={entries}
+      onCardClick={(job) => navigate(`/jobs/${job.id}`)}
+      onUnwishlist={handleUnwishlist}
+    />
   );
-}
-
-/**
- * 리뷰는 카드가 열릴 때만 가져온다. useReviews는 jobId가 비면 요청하지 않으므로
- * 닫힌 상태에서는 네트워크 호출이 없다.
- */
-function ExpandedCardWithReviews({ job, onClose }: { job: Job | null; onClose: () => void }) {
-  const { reviews } = useReviews(job?.id ?? '');
-  return <ExpandedCard job={job} onClose={onClose} reviews={reviews} />;
 }

@@ -242,7 +242,7 @@ function ApplyMessageField({
           value={value}
           onChange={(event) => onChange(event.target.value.slice(0, MAX_MESSAGE_LEN))}
           maxLength={MAX_MESSAGE_LEN}
-          placeholder="간단한 자기소개나 지원 동기를 적어주세요"
+          placeholder="예: 카페에서 6개월 일해 음료 제조와 포스 사용에 익숙합니다. 평일 오후에 꾸준히 근무할 수 있어 지원합니다."
         />
       </div>
       <div className="mt-1.5 flex items-start justify-between gap-3">

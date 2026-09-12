@@ -31,6 +31,8 @@ const CATEGORIES = [
 
 const AVATAR_SIZE = 72;
 const AVATAR_FALLBACK_ERROR = '사진을 올리지 못했어요. 다시 시도해 주세요';
+/** 고용노동부 고시 기준 2026년 적용 최저임금. 공고 작성 폼과 같은 하한이다. */
+const MIN_WAGE = 10_320;
 
 /** 훅이 던지는 값이 Error 가 아닐 수도 있어(StorageError) message 를 방어적으로 꺼낸다. */
 function messageOf(error: unknown, fallback: string): string {
@@ -173,9 +175,11 @@ function ProfileForm({
     const parsedWage = desiredWage ? Number(desiredWage) : null;
     if (
       parsedWage !== null &&
-      (!Number.isInteger(parsedWage) || parsedWage < 0 || parsedWage > 1_000_000)
+      (!Number.isInteger(parsedWage) || parsedWage < MIN_WAGE || parsedWage > 1_000_000)
     ) {
-      setWageError('희망 시급은 0원부터 1,000,000원 사이로 입력해 주세요');
+      setWageError(
+        `희망 시급은 2026년 최저임금(${MIN_WAGE.toLocaleString('ko-KR')}원) 이상으로 입력해 주세요`,
+      );
       return;
     }
 
@@ -250,7 +254,7 @@ function ProfileForm({
           rows={6}
           onChange={(event) => setIntro(event.target.value.slice(0, MAX_INTRO_LENGTH))}
           hint={`${intro.length} / ${MAX_INTRO_LENGTH}`}
-          placeholder="어떤 일을 해봤는지, 언제 일할 수 있는지 적어주세요"
+          placeholder="예: 카페에서 6개월 일했고 손님 응대에 자신 있어요. 평일 오후와 주말에 근무할 수 있습니다."
         />
 
         <Textarea
@@ -258,7 +262,7 @@ function ProfileForm({
           value={experience}
           rows={5}
           onChange={(event) => setExperience(event.target.value)}
-          placeholder="근무했던 곳과 맡았던 일을 적어주세요"
+          placeholder="예: 교내 카페 6개월 — 음료 제조, 포스 계산, 마감 정리"
         />
 
         <div>
@@ -356,7 +360,7 @@ function ProfileForm({
               }}
               aria-invalid={Boolean(wageError)}
               aria-describedby={wageError ? 'desired-wage-error' : undefined}
-              placeholder="예: 12000"
+              placeholder={MIN_WAGE.toLocaleString('ko-KR')}
               className="h-[52px] w-full rounded-field border border-line bg-surface px-4 pr-10 text-[16px] text-ink outline-none placeholder:text-faint focus:border-brand focus:ring-[3px] focus:ring-brand/15"
             />
             <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-[14px] text-faint">
@@ -366,6 +370,11 @@ function ProfileForm({
           {wageError && (
             <p id="desired-wage-error" className="mt-1.5 text-[13px] text-error">
               {wageError}
+            </p>
+          )}
+          {!wageError && (
+            <p className="mt-1.5 text-[12px] text-faint">
+              2026년 최저임금 {MIN_WAGE.toLocaleString('ko-KR')}원 이상
             </p>
           )}
         </div>
