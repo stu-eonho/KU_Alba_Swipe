@@ -34,10 +34,24 @@ export const ROTATE_DIVISOR = 18;
 export const ROTATE_MAX_DEG = 18;
 /** 회전 원점. 아래쪽에 축이 있어야 실물 카드처럼 보인다 */
 export const ROTATE_ORIGIN = '50% 120%';
-/** 날아가기 320ms */
+/** 드래그로 날릴 때 320ms. 손가락이 이미 속도를 줬으므로 이어받기만 하면 된다 */
 export const FLY_MS = 320;
-/** 날아가기 easing cubic-bezier(0.22, 1, 0.36, 1) */
+/** 드래그 날아가기 easing cubic-bezier(0.22, 1, 0.36, 1) — 초반에 거의 다 가는 곡선 */
 export const FLY_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+/*
+ * 버튼·키보드는 카드가 **정지 상태**에서 출발한다.
+ * 같은 ease-out(0.22,1,0.36,1)을 쓰면 320ms 중 앞 100ms 안에 화면 밖으로 나가버려서
+ * "날아갔다"가 아니라 "사라졌다"로 보인다 — 손가락이 준 속도가 없기 때문이다.
+ *
+ * 그래서 정지 출발에는 더 길게, 가속이 보이는 ease-in-out 을 쓴다.
+ */
+export const FLY_FROM_REST_MS = 520;
+export const FLY_FROM_REST_EASE: [number, number, number, number] = [0.4, 0, 0.2, 1];
+/** 이 값보다 x 가 작으면 정지 출발로 본다 (버튼·키보드) */
+const REST_X_PX = 12;
+/** 카드를 언마운트해도 되는 시점. 두 경로 중 긴 쪽을 기준으로 잡는다 */
+export const FLY_MAX_MS = Math.max(FLY_MS, FLY_FROM_REST_MS);
 /** 목표 x = sign(x) * (윈도우 폭 + 200) */
 export const FLY_OVERSHOOT_PX = 200;
 /** 취소 복귀 spring(stiffness 300, damping 28) */
@@ -170,10 +184,29 @@ export function useSwipeGesture({ enabled, onCommit }: UseSwipeGestureOptions): 
 
       const viewport = typeof window === 'undefined' ? 480 : window.innerWidth;
       const target = (direction === 'right' ? 1 : -1) * (viewport + FLY_OVERSHOOT_PX);
-      const options = { duration: FLY_MS / 1000, ease: FLY_EASE };
 
-      animate(x, target, options);
-      animate(opacity, 0, options);
+      /*
+       * 출발 지점으로 입력을 구분한다. 드래그는 손을 뗀 자리(보통 100px 이상)에서,
+       * 버튼·키보드는 원점에서 시작한다. CardStack·SwipeCard 에 플래그를 흘려보내지
+       * 않아도 여기서 알 수 있다.
+       */
+      const fromRest = Math.abs(x.get()) < REST_X_PX;
+      const durationMs = fromRest ? FLY_FROM_REST_MS : FLY_MS;
+      const ease = fromRest ? FLY_FROM_REST_EASE : FLY_EASE;
+      const duration = durationMs / 1000;
+
+      animate(x, target, { duration, ease });
+
+      /*
+       * 페이드는 뒤쪽 60% 구간에서만 돈다. 처음부터 같이 흐리게 하면 카드가
+       * 이동하는 모습이 아니라 제자리에서 옅어지는 모습으로 읽힌다.
+       * 회전은 x 에서 파생되므로 따로 애니메이션하지 않아도 같이 호를 그린다.
+       */
+      animate(opacity, 0, {
+        duration: duration * 0.6,
+        delay: duration * 0.4,
+        ease: 'linear',
+      });
     },
     [opacity, prefersReduced, x],
   );

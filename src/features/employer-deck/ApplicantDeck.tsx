@@ -28,7 +28,12 @@ import { useReducedMotion } from 'motion/react';
 import { UsersRound } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import type { ApplicantEntry, SwipeDirection } from '@/types';
-import { FLY_MS, REDUCED_FADE_MS, STACK_DEPTH, swipeHaptic } from '@/features/deck/useSwipeGesture';
+import {
+  FLY_MAX_MS,
+  REDUCED_FADE_MS,
+  STACK_DEPTH,
+  swipeHaptic,
+} from '@/features/deck/useSwipeGesture';
 /* 튜토리얼 신호만 가져온다. 데이터 모듈이라 컴포넌트가 딸려오지 않는다 (PHASE7 F9) */
 import { emitTutorialSwipe } from '@/features/onboarding/tutorialSteps';
 import { ApplicantDeckCard } from './ApplicantDeckCard';
@@ -113,7 +118,8 @@ export function ApplicantDeck({
        */
       emitTutorialSwipe(direction);
 
-      const flyMs = prefersReduced ? REDUCED_FADE_MS : FLY_MS;
+      // 공고 덱과 같은 이유로 긴 쪽을 기준으로 잡는다. 버튼 스와이프는 520ms 날아간다.
+      const flyMs = prefersReduced ? REDUCED_FADE_MS : FLY_MAX_MS;
       const timer = window.setTimeout(() => {
         setExiting((prev) => prev.filter((item) => item.entry.id !== entry.id));
       }, flyMs + UNMOUNT_GRACE_MS);
