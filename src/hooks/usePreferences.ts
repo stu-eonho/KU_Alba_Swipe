@@ -15,7 +15,7 @@
  * 추천이 잘 돌아도 앱이 싸구려로 보입니다. 실패한 갱신은 다음 스와이프에
  * 어차피 다시 올라갑니다.
  */
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchPreferences, savePreferences } from '@/lib/api/preferences';
 import { topPreferences, updateWeights, withInitialPicks, type Weights } from '@/lib/recommend';
@@ -26,7 +26,8 @@ export function usePreferences() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const queryKey = ['preferences', user?.id];
+  // useMemo 가 없으면 매 렌더 새 배열이 되어 아래 useCallback 들이 전부 불안정해집니다.
+  const queryKey = useMemo(() => ['preferences', user?.id], [user?.id]);
 
   const query = useQuery({
     queryKey,
@@ -52,8 +53,7 @@ export function usePreferences() {
       queryClient.setQueryData<Weights>(queryKey, next);
       if (user) persist.mutate(next);
     },
-    // queryKey 는 user?.id 로만 바뀌므로 의존성에 user 를 둡니다.
-    [queryClient, persist, user], // eslint-disable-line react-hooks/exhaustive-deps
+    [queryClient, queryKey, persist, user],
   );
 
   const applySwipe = useCallback(
