@@ -25,10 +25,16 @@ const MAX_INTERESTS = 3;
 
 export type ApplicantSwipeCardProps = {
   entry: ApplicantEntry;
+  /** 구인자 튜토리얼은 덱 전체가 아니라 활성 카드 요약만 강조한다. */
+  tourAnchor?: boolean;
   className?: string;
 };
 
-export function ApplicantSwipeCard({ entry, className }: ApplicantSwipeCardProps) {
+export function ApplicantSwipeCard({
+  entry,
+  tourAnchor = false,
+  className,
+}: ApplicantSwipeCardProps) {
   const { seeker, job, createdAt } = entry;
   const profile = seeker.profile;
 
@@ -50,7 +56,10 @@ export function ApplicantSwipeCard({ entry, className }: ApplicantSwipeCardProps
       )}
     >
       {/* 상단 — 아바타는 작게, 이름과 지원 공고만 */}
-      <div className="flex shrink-0 items-center gap-3">
+      <div
+        data-tour={tourAnchor ? 'active-applicant-summary' : undefined}
+        className="flex shrink-0 items-center gap-3"
+      >
         <ProfileAvatar nickname={seeker.nickname} avatarUrl={profile?.avatarUrl} size={56} />
         <div className="min-w-0 flex-1">
           <p className="clamp-1 text-[18px] leading-tight font-semibold text-ink">

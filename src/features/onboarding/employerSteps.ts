@@ -19,17 +19,17 @@ import type { TutorialSlide } from './tutorialSlides';
 export const EMPLOYER_STEPS: readonly TutorialStep[] = [
   {
     id: 'employer-deck',
-    anchor: 'applicant-deck',
+    anchor: 'active-applicant-summary',
     title: '지원자가 카드로 옵니다',
-    body: '내 공고에 지원한 사람이 한 장씩 올라와요.\n카드에 경력과 가능한 시간이 담겨 있습니다.',
+    body: '이름과 지원 공고를 먼저 확인하고, 카드를 넘겨 자세히 살펴보세요.',
     padding: 6,
     radius: 14,
   },
   {
     id: 'employer-interested',
-    anchor: 'applicant-deck',
+    anchor: 'active-applicant-summary',
     title: '오른쪽으로 밀면 관심 있어요',
-    body: '카드를 오른쪽으로 밀어보세요.\n지원자에게 바로 알림이 갑니다.',
+    body: '함께 일하고 싶다면 오른쪽으로 밀어보세요.',
     // 실제 스와이프면 자동 진행하고, 지원자가 없어도 "다음"을 즉시 눌러 진행할 수 있다.
     waitFor: 'right',
     padding: 6,
