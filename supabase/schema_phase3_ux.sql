@@ -106,7 +106,12 @@ create policy "own notifications read" on notifications
 -- INSERT / DELETE 정책을 만들지 않는 것이 의도입니다.
 -- 정책이 없으면 거부가 기본값이라, 알림은 오직 아래 trigger 로만 생깁니다.
 -- 클라이언트가 임의의 제목으로 남에게 알림을 보낼 수 없습니다.
-grant select, update on notifications to authenticated;
+
+-- CRITICAL: UPDATE 를 read_at 한 컬럼으로 묶는 것은 RLS 가 아니라 컬럼 GRANT 입니다.
+-- RLS 정책은 "어떤 행" 인지만 정할 수 있고 "어떤 컬럼" 인지는 정하지 못합니다.
+-- 테이블 전체에 update 를 주면 본인 알림의 title 이나 payload 를 바꿀 수 있게 됩니다.
+grant select on notifications to authenticated;
+grant update (read_at) on notifications to authenticated;
 
 -- ============================================================
 -- 4. 알림 생성 trigger
