@@ -1,12 +1,74 @@
 /**
- * OWNER: Dev A (data/auth)
+ * OWNER: 개발자 A (데이터/인증)
  *
- * This is the ONLY thing Dev B calls to get deck data.
- * queryKey: ['jobs'] - do not invalidate it after a swipe. The card is already
- * removed optimistically, and refetching makes the deck flicker.
+ * 개발자 B 가 덱 데이터를 얻는 유일한 통로입니다.
  *
- * TODO(A): return { jobs, isLoading, isError, swipe(jobId, direction) }
+ *   const { jobs, isLoading, isError, swipe } = useDeck();
+ *   swipe(job.id, 'right');   // 찜
+ *   swipe(job.id, 'left');    // 관심 없음
+ *
+ * CRITICAL: swipe() 는 낙관적입니다. 서버 응답을 기다리지 않고 이 훅이 즉시
+ * ['jobs'] 캐시에서 그 공고를 빼기 때문에, B 는 카드를 날리는 애니메이션만 하면 됩니다.
+ * 실패해도 카드를 되돌리지 않습니다 — 이미 다음 카드를 보고 있는데 앞 카드가
+ * 되돌아오면 더 혼란스럽습니다. 실패는 swipeError 로 알리고 토스트만 띄웁니다.
+ *
+ * ['jobs'] 는 스와이프 후 무효화하지 않습니다. 이미 로컬에서 뺐으므로 재요청이 불필요하고,
+ * 재요청하면 덱이 깜빡입니다.
  */
+import { useCallback } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchDeckJobs } from '@/lib/api/jobs';
+import { createSwipe } from '@/lib/api/swipes';
+import { useAuth } from '@/lib/auth-context';
+import type { Job, SwipeDirection } from '@/types';
+
 export function useDeck() {
-  throw new Error('TODO(A): not implemented');
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const query = useQuery({
+    queryKey: ['jobs'],
+    queryFn: fetchDeckJobs,
+    enabled: Boolean(user),
+    staleTime: 0,
+  });
+
+  const mutation = useMutation({
+    mutationFn: ({ jobId, direction }: { jobId: string; direction: SwipeDirection }) =>
+      createSwipe(jobId, direction),
+
+    onMutate: ({ jobId }) => {
+      // 응답을 기다리지 않고 덱에서 먼저 뺍니다. 체감 속도가 이 앱의 전부입니다.
+      queryClient.setQueryData<Job[]>(['jobs'], (jobs) =>
+        (jobs ?? []).filter((job) => job.id !== jobId),
+      );
+    },
+
+    onSuccess: () => {
+      // 찜 목록은 바뀌었을 수 있으니 무효화합니다. 덱(['jobs'])은 건드리지 않습니다.
+      queryClient.invalidateQueries({ queryKey: ['swipes'] });
+    },
+
+    onError: (error) => {
+      console.error('[deck] 스와이프 저장 실패:', error);
+    },
+  });
+
+  const swipe = useCallback(
+    (jobId: string, direction: SwipeDirection) => {
+      mutation.mutate({ jobId, direction });
+    },
+    [mutation],
+  );
+
+  return {
+    jobs: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    /** 에러 화면의 "다시 시도" 버튼용 */
+    retry: query.refetch,
+    swipe,
+    /** 스와이프 저장이 실패했을 때만 채워집니다. 토스트에만 쓰고 UI 를 되돌리지 마세요. */
+    swipeError: mutation.error,
+  };
 }
