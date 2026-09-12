@@ -15,7 +15,7 @@
  *           HTML 주입 API(dangerously* 계열)를 쓰지 않는다.
  */
 import clsx from 'clsx';
-import { Clock, MapPin, Star, X } from 'lucide-react';
+import { Clock, Heart, MapPin, Star, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Chip, IconButton } from '@/components/ui';
 import { useApply } from '@/hooks/useApply';
@@ -37,6 +37,8 @@ export type BackFaceProps = {
   onBeforeApply?: () => void;
   /** 지원 상세처럼 읽기 전용으로 쓸 때 false. 기본값은 기존과 같은 true */
   showApply?: boolean;
+  isWishlisted?: boolean;
+  onToggleWishlist?: () => void;
   className?: string;
 };
 
@@ -69,6 +71,8 @@ export function BackFace({
   onClose,
   onBeforeApply,
   showApply = true,
+  isWishlisted,
+  onToggleWishlist,
   className,
 }: BackFaceProps) {
   const list = reviews ?? [];
@@ -164,7 +168,14 @@ export function BackFace({
         </section>
       </div>
 
-      {showApply && <ApplicationFooter job={job} onBeforeApply={onBeforeApply} />}
+      {showApply && (
+        <ApplicationFooter
+          job={job}
+          onBeforeApply={onBeforeApply}
+          isWishlisted={isWishlisted}
+          onToggleWishlist={onToggleWishlist}
+        />
+      )}
     </div>
   );
 }
@@ -220,7 +231,17 @@ function WantedTraitsSection({ job }: { job: Job }) {
   );
 }
 
-function ApplicationFooter({ job, onBeforeApply }: { job: Job; onBeforeApply?: () => void }) {
+function ApplicationFooter({
+  job,
+  onBeforeApply,
+  isWishlisted,
+  onToggleWishlist,
+}: {
+  job: Job;
+  onBeforeApply?: () => void;
+  isWishlisted?: boolean;
+  onToggleWishlist?: () => void;
+}) {
   const navigate = useNavigate();
   const { existingApplication, isChecking, isCheckError, retryCheck } = useApply(job.id);
 
@@ -229,21 +250,47 @@ function ApplicationFooter({ job, onBeforeApply }: { job: Job; onBeforeApply?: (
     navigate(to);
   };
 
+  const wishlistButton = onToggleWishlist ? (
+    <button
+      type="button"
+      aria-label={isWishlisted ? '찜 해제' : '찜하기'}
+      aria-pressed={Boolean(isWishlisted)}
+      onClick={onToggleWishlist}
+      className="border-line text-muted active:bg-subtle flex size-[52px] shrink-0 items-center justify-center rounded-field border transition-transform duration-100 ease-out active:scale-[0.97]"
+    >
+      <Heart
+        size={22}
+        strokeWidth={1.8}
+        className={isWishlisted ? 'fill-ink text-ink' : undefined}
+        aria-hidden
+      />
+    </button>
+  ) : null;
+
   return (
     <div className="border-line-soft bg-surface shrink-0 border-t p-4">
       {isChecking ? (
-        <Button size="lg" fullWidth disabled>
-          지원 여부 확인 중
-        </Button>
+        <div className="flex gap-2">
+          <Button size="lg" fullWidth disabled>
+            지원 여부 확인 중
+          </Button>
+          {wishlistButton}
+        </div>
       ) : isCheckError ? (
-        <Button variant="secondary" size="lg" fullWidth onClick={() => void retryCheck()}>
-          다시 확인
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="lg" fullWidth onClick={() => void retryCheck()}>
+            다시 확인
+          </Button>
+          {wishlistButton}
+        </div>
       ) : existingApplication ? (
         <div className="flex flex-col gap-2">
-          <Button size="lg" fullWidth disabled>
-            지원 완료
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" fullWidth disabled>
+              지원 완료
+            </Button>
+            {wishlistButton}
+          </div>
           <Button
             variant="secondary"
             size="lg"
@@ -254,9 +301,12 @@ function ApplicationFooter({ job, onBeforeApply }: { job: Job; onBeforeApply?: (
           </Button>
         </div>
       ) : (
-        <Button size="lg" fullWidth onClick={() => go(`/apply/${job.id}`)}>
-          지원하기
-        </Button>
+        <div className="flex gap-2">
+          <Button size="lg" fullWidth onClick={() => go(`/apply/${job.id}`)}>
+            지원하기
+          </Button>
+          {wishlistButton}
+        </div>
       )}
     </div>
   );

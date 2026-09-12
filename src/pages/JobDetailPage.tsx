@@ -10,9 +10,12 @@
  * 이미 렌더한다. 그래서 BackFace에 onClose를 넘기지 않는다: 넘기면 우상단 X가 하나 더 생겨
  * 닫는 방법이 둘이 된다.
  */
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
+import { useToast } from '@/components/ui';
 import { BackFace, NotFoundState, WishlistGridSkeleton } from '@/features/wishlist';
+import { useDeck } from '@/hooks/useDeck';
 import { useReviews } from '@/hooks/useReviews';
 import { useWishlist } from '@/hooks/useWishlist';
 import type { Job } from '@/types';
@@ -20,17 +23,42 @@ import type { Job } from '@/types';
 export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   /**
    * 공고는 이미 받아 둔 캐시에서만 찾는다(ApplyPage와 같은 방식 — 단건 조회 훅이 없다).
    *   1) 찜한 공고 → ['swipes'] (useWishlist)
    *   2) 홈 덱에서 탭해서 들어온 공고 → 아직 찜 전이라 ['jobs'] 덱 캐시에 있다
    */
-  const { entries, isLoading } = useWishlist();
+  const { entries, isLoading, remove, removeError } = useWishlist();
+  const { swipe, swipeError } = useDeck({ includeIncompatible: true });
   const deckJobs = queryClient.getQueryData<Job[]>(['jobs']);
-  const job =
+  const cachedJob =
     entries.find((entry) => entry.job.id === jobId)?.job ??
     deckJobs?.find((deckJob) => deckJob.id === jobId);
+  const [jobSnapshot, setJobSnapshot] = useState<Job | null>(() => cachedJob ?? null);
+  const [wishlistOverride, setWishlistOverride] = useState<boolean | null>(null);
+  const job = cachedJob ?? jobSnapshot;
+  const storedWishlisted = entries.some((entry) => entry.job.id === jobId);
+  const isWishlisted = wishlistOverride ?? storedWishlisted;
+
+  useEffect(() => {
+    if (removeError || swipeError) toast.error('찜 상태를 저장하지 못했어요');
+  }, [removeError, swipeError, toast]);
+
+  const toggleWishlist = () => {
+    if (!job) return;
+    setJobSnapshot(job);
+    if (isWishlisted) {
+      setWishlistOverride(false);
+      remove(job.id);
+      toast.success('찜에서 뺐어요');
+      return;
+    }
+    setWishlistOverride(true);
+    swipe(job.id, 'right');
+    toast.success('찜에 담았어요');
+  };
 
   // 리뷰는 jobId가 비면 요청하지 않는다(useReviews의 enabled).
   const { reviews } = useReviews(job?.id ?? '');
@@ -50,7 +78,12 @@ export default function JobDetailPage() {
    */
   return (
     <div className="h-[calc(100dvh-56px)]">
-      <BackFace job={job} reviews={reviews} />
+      <BackFace
+        job={job}
+        reviews={reviews}
+        isWishlisted={isWishlisted}
+        onToggleWishlist={toggleWishlist}
+      />
     </div>
   );
 }
