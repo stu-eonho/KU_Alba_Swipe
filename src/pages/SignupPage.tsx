@@ -8,7 +8,13 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { AuthFailure } from '@/lib/auth-errors';
-import { AuthLayout, Field, FormBanner, SubmitButton } from '@/features/auth/form-primitives';
+import {
+  AuthLayout,
+  AuthLoading,
+  Field,
+  FormBanner,
+  SubmitButton,
+} from '@/features/auth/form-primitives';
 import {
   validateEmail,
   validateNickname,
@@ -34,7 +40,7 @@ export default function SignupPage() {
   const [banner, setBanner] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  if (isLoading) return null;
+  if (isLoading) return <AuthLoading />;
   // 가입에 성공하면 자동 로그인 상태가 되므로 이 분기가 그대로 홈으로 보냅니다.
   if (user) return <Navigate to="/" replace state={{ toast: '환영해요!' }} />;
 

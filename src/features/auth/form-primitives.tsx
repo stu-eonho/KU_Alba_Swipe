@@ -111,3 +111,22 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+/**
+ * 세션 복구 중에 보여주는 전체 화면 스피너.
+ * 여기서 null 을 돌려주면 새로고침할 때마다 흰 화면이 한 번 스칩니다.
+ */
+export function AuthLoading() {
+  return (
+    <div
+      role="status"
+      aria-label="불러오는 중"
+      className="flex min-h-dvh items-center justify-center bg-app"
+    >
+      <span
+        aria-hidden
+        className="size-8 animate-spin rounded-full border-[3px] border-line border-t-brand"
+      />
+    </div>
+  );
+}

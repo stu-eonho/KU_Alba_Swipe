@@ -8,7 +8,13 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { AuthFailure } from '@/lib/auth-errors';
-import { AuthLayout, Field, FormBanner, SubmitButton } from '@/features/auth/form-primitives';
+import {
+  AuthLayout,
+  AuthLoading,
+  Field,
+  FormBanner,
+  SubmitButton,
+} from '@/features/auth/form-primitives';
 import { validateEmail, validatePassword } from '@/features/auth/validation';
 
 type FieldErrors = { email?: string; password?: string };
@@ -22,8 +28,8 @@ export default function LoginPage() {
   const [banner, setBanner] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  // 세션 복구 중에는 아무것도 그리지 않습니다. 이 분기가 없으면 새로고침마다 로그인 화면이 깜빡입니다.
-  if (isLoading) return null;
+  // 세션 복구가 끝나기 전에 폼을 그리면, 이미 로그인된 사용자가 로그인 화면을 한 번 보고 홈으로 튑니다.
+  if (isLoading) return <AuthLoading />;
   if (user) return <Navigate to="/" replace />;
 
   function clearError(field: keyof FieldErrors) {
