@@ -108,7 +108,63 @@ export type SeekerProfile = {
   avatarUrl: string | null;
   resumeUrl: string | null;
   updatedAt: string;
+  /**
+   * MBTI. '선택 안 함'은 null 입니다.
+   *
+   * 아래 두 필드는 optional 입니다. 이 계약 커밋 직후에도, 아직 새 컬럼을
+   * 매핑하지 않은 다른 브랜치의 mapper 가 그대로 컴파일돼야 하기 때문입니다.
+   * 마이그레이션 전 행에서도 각각 null 과 [] 로 들어옵니다.
+   */
+  mbti?: Mbti | null;
+  /** 성격 키워드. 최대 MAX_PERSONALITY_TRAITS 개 */
+  personalityTraits?: PersonalityTrait[];
 };
+
+/** 허용되는 MBTI 16값. 자유 입력과 소문자는 저장하지 않습니다. */
+export const MBTI_VALUES = [
+  'INTJ',
+  'INTP',
+  'ENTJ',
+  'ENTP',
+  'INFJ',
+  'INFP',
+  'ENFJ',
+  'ENFP',
+  'ISTJ',
+  'ISFJ',
+  'ESTJ',
+  'ESFJ',
+  'ISTP',
+  'ISFP',
+  'ESTP',
+  'ESFP',
+] as const;
+
+export type Mbti = (typeof MBTI_VALUES)[number];
+
+/**
+ * 성격 키워드 고정 목록. 자유 입력을 받지 않습니다 —
+ * 검색·표기 통일·혐오 표현 필터가 필요 없는 가장 안전한 방식입니다.
+ */
+export const PERSONALITY_TRAITS = [
+  '활발함',
+  '소심함',
+  '차분함',
+  '성실함',
+  '책임감',
+  '친절함',
+  '긍정적',
+  '꼼꼼함',
+  '협업형',
+  '빠른 습득',
+  '체력 좋음',
+  '시간 약속',
+] as const;
+
+export type PersonalityTrait = (typeof PERSONALITY_TRAITS)[number];
+
+/** 한 사람이 고를 수 있는 성격 키워드 최대 개수 */
+export const MAX_PERSONALITY_TRAITS = 5;
 
 /** applied = 지원함, viewed = 사업자가 열람, accepted = 채용, rejected = 거절 */
 export type ApplicationStatus = 'applied' | 'viewed' | 'accepted' | 'rejected';
@@ -136,4 +192,37 @@ export type ApplicantEntry = {
     /** 프로필을 아직 안 만든 지원자도 있습니다. 그때는 null */
     profile: SeekerProfile | null;
   };
+};
+
+/**
+ * 인앱 알림 종류.
+ * 이후 채팅·새 공고·채용 제안도 같은 테이블에 type 만 늘려서 붙입니다.
+ */
+export type NotificationType =
+  | 'application_received'
+  | 'application_viewed'
+  | 'application_accepted'
+  | 'application_rejected'
+  | 'system';
+
+/**
+ * 알림 1건.
+ *
+ * title 과 body 는 DB trigger 가 만듭니다. 클라이언트가 임의의 문구로
+ * 알림을 발송할 수 없어야 하기 때문입니다.
+ */
+export type NotificationItem = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  /** 확장 지점. 이동할 route params 같은 기능별 메타데이터가 들어갑니다 */
+  payload: Record<string, unknown>;
+  /** null 이면 읽지 않음 */
+  readAt: string | null;
+  createdAt: string;
+  applicationId: string | null;
+  jobId: string | null;
+  /** 알림을 그릴 때 필요한 공고 최소 정보. 공고가 지워졌으면 null */
+  job: { id: string; storeName: string; imageUrl: string | null } | null;
 };
