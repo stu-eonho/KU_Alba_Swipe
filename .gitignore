@@ -34,3 +34,7 @@ npm-debug.log*
 # 또한 소유자 없는 공유 파일이 되어 CODEOWNERS로 없앤 충돌면을 다시 만든다.
 .claude/
 CLAUDE.md
+
+# 하네스 에이전트 중간 산출물 (로컬 전용)
+_workspace/
+_workspace_prev/
